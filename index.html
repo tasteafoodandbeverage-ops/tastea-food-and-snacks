@@ -945,476 +945,486 @@
 
     <!-- Application Script Engine -->
     <script>
-      const SUPABASE_URL = "https://droxpyfhknkswaabsabk.supabase.co";
-      const SUPABASE_ANON_KEY =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyb3hweWZoa25rc3dhYWJzYWJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwNjgzNDIsImV4cCI6MjEwMzY0NDM0Mn0.bSawsQ0t6Cls4QjpTxhk6Mp80GFlFUg1lTqLk87fxuM"; // Paste your public anon key here
-      const UPI_ID = "9629511751@ybl";
-      const ADMIN_WHATSAPP = "9629511751"; // Replace with your Tastea WhatsApp Number
+            const SUPABASE_URL = "https://droxpyfhknkswaabsabk.supabase.co";
+            const SUPABASE_ANON_KEY =
+              "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyb3hweWZoa25rc3dhYWJzYWJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwNjgzNDIsImV4cCI6MjEwMzY0NDM0Mn0.bSawsQ0t6Cls4QjpTxhk6Mp80GFlFUg1lTqLk87fxuM"; // Paste your public anon key here
+            const UPI_ID = "9629511751@ybl";
+            const ADMIN_WHATSAPP = "9629511751"; // Replace with your Tastea WhatsApp Number
 
-      let supabaseClient = null;
-      try {
-        if (
-          SUPABASE_URL.startsWith("http") &&
-          !SUPABASE_ANON_KEY.includes("YOUR_ANON_KEY")
-        ) {
-          supabaseClient = supabase.createClient(
-            SUPABASE_URL,
-            SUPABASE_ANON_KEY,
-          );
-        }
-      } catch (e) {
-        console.warn("Supabase bypassed.");
-      }
-
-      let currentDayMenu = {
-        veg: {
-          name: "Crispy Veg Samosa",
-          portion: "Pack of 2 Pcs",
-          price: 30,
-          oldPrice: 50,
-          badge: "Save 40%",
-          image:
-            "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=500&auto=format&fit=crop&q=80",
-        },
-        nonveg: {
-          name: "Spicy Chicken Keema Samosa",
-          portion: "Pack of 2 Pcs",
-          price: 45,
-          oldPrice: 65,
-          badge: "Save 30%",
-          image:
-            "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=500&auto=format&fit=crop&q=80",
-        },
-      };
-
-      const quantities = { veg: 1, nonveg: 1 };
-      let currentUser = JSON.parse(
-        localStorage.getItem("tastea_user") || "null",
-      );
-      let currentBuilding = null;
-      let totalPendingDue = 0;
-      let userCreditLimit = 500;
-      let userOrdersList = [];
-
-      window.onload = async function () {
-        if (currentUser) {
-          document.getElementById("user-display").innerHTML =
-            `<i class="fa-regular fa-user text-emerald-600"></i> ${currentUser.name.split(" ")[0]}`;
-          await fetchUserDue();
-        }
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const buildingSlug = urlParams.get("b") || "alpha-tech";
-
-        if (supabaseClient) {
-          try {
-            const { data: bldg } = await supabaseClient
-              .from("buildings")
-              .select("*")
-              .eq("qr_code_slug", buildingSlug)
-              .maybeSingle();
-
-            if (bldg) {
-              currentBuilding = bldg;
-              document.getElementById("header-building-name").innerHTML =
-                `<i class="fa-solid fa-location-dot text-emerald-600 text-[10px]"></i> ${bldg.campus_name}`;
-              document.getElementById("cutoff-display").innerText =
-                `Cut-off: ${bldg.cutoff_slot || "12:30 PM"}`;
-              document.getElementById("delivery-display").innerText =
-                `🚚 Desk Drop: ${bldg.delivery_slot || "03:30 PM"}`;
-            }
-          } catch (err) {
-            console.warn("Building query skipped:", err);
-          }
-        }
-
-        if (!currentBuilding) {
-          document.getElementById("header-building-name").innerHTML =
-            `<i class="fa-solid fa-location-dot text-emerald-600 text-[10px]"></i> Tastea Campus Partner`;
-        }
-
-        await loadBuildingMenu();
-      };
-
-      async function loadBuildingMenu() {
-        if (supabaseClient) {
-          try {
-            let items = null;
-
-            if (currentBuilding) {
-              const { data: bldgItems } = await supabaseClient
-                .from("menu_items")
-                .select("*")
-                .eq("is_active_today", true)
-                .eq("building_id", currentBuilding.id);
-              if (bldgItems && bldgItems.length > 0) items = bldgItems;
+            let supabaseClient = null;
+            try {
+              if (
+                SUPABASE_URL.startsWith("http") &&
+                !SUPABASE_ANON_KEY.includes("YOUR_ANON_KEY")
+              ) {
+                supabaseClient = supabase.createClient(
+                  SUPABASE_URL,
+                  SUPABASE_ANON_KEY,
+                );
+              }
+            } catch (e) {
+              console.warn("Supabase bypassed.");
             }
 
-            if (!items || items.length === 0) {
-              const { data: globalItems } = await supabaseClient
-                .from("menu_items")
-                .select("*")
-                .eq("is_active_today", true)
-                .is("building_id", null);
-              if (globalItems && globalItems.length > 0) items = globalItems;
-            }
+            let currentDayMenu = {
+              veg: {
+                name: "Crispy Veg Samosa",
+                portion: "Pack of 2 Pcs",
+                price: 30,
+                oldPrice: 50,
+                badge: "Save 40%",
+                image:
+                  "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=500&auto=format&fit=crop&q=80",
+              },
+              nonveg: {
+                name: "Spicy Chicken Keema Samosa",
+                portion: "Pack of 2 Pcs",
+                price: 45,
+                oldPrice: 65,
+                badge: "Save 30%",
+                image:
+                  "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=500&auto=format&fit=crop&q=80",
+              },
+            };
 
-            if (items && items.length > 0) {
-              const v = items.find((i) => i.category_type === "veg");
-              const nv = items.find((i) => i.category_type === "nonveg");
+            const quantities = { veg: 1, nonveg: 1 };
+            let currentUser = JSON.parse(
+              localStorage.getItem("tastea_user") || "null",
+            );
+            let currentBuilding = null;
+            let totalPendingDue = 0;
+            let userCreditLimit = 500;
+            let userOrdersList = [];
 
-              if (v) {
-                currentDayMenu.veg = {
-                  id: v.id,
-                  name: v.item_name,
-                  portion: v.portion_badge || "Pack of 2 Pcs",
-                  price:
-                    v.final_price ||
-                    Math.round(
-                      v.base_price - (v.base_price * v.discount_pct) / 100,
-                    ),
-                  oldPrice: v.base_price,
-                  badge: `Save ${v.discount_pct}%`,
-                  image: v.image_url || currentDayMenu.veg.image,
-                };
+            window.onload = async function () {
+              if (currentUser) {
+                document.getElementById("user-display").innerHTML =
+                  `<i class="fa-regular fa-user text-emerald-600"></i> ${currentUser.name.split(" ")[0]}`;
+                await fetchUserDue();
               }
 
-              if (nv) {
-                currentDayMenu.nonveg = {
-                  id: nv.id,
-                  name: nv.item_name,
-                  portion: nv.portion_badge || "Pack of 2 Pcs",
-                  price:
-                    nv.final_price ||
-                    Math.round(
-                      nv.base_price - (nv.base_price * nv.discount_pct) / 100,
-                    ),
-                  oldPrice: nv.base_price,
-                  badge: `Save ${nv.discount_pct}%`,
-                  image: nv.image_url || currentDayMenu.nonveg.image,
-                };
+              const urlParams = new URLSearchParams(window.location.search);
+              const buildingSlug = urlParams.get("b") || "alpha-tech";
+
+              if (supabaseClient) {
+                try {
+                  const { data: bldg } = await supabaseClient
+                    .from("buildings")
+                    .select("*")
+                    .eq("qr_code_slug", buildingSlug)
+                    .maybeSingle();
+
+                  if (bldg) {
+                    currentBuilding = bldg;
+                    document.getElementById("header-building-name").innerHTML =
+                      `<i class="fa-solid fa-location-dot text-emerald-600 text-[10px]"></i> ${bldg.campus_name}`;
+                    document.getElementById("cutoff-display").innerText =
+                      `Cut-off: ${bldg.cutoff_slot || "12:30 PM"}`;
+                    document.getElementById("delivery-display").innerText =
+                      `🚚 Desk Drop: ${bldg.delivery_slot || "03:30 PM"}`;
+                  }
+                } catch (err) {
+                  console.warn("Building query skipped:", err);
+                }
+              }
+
+              if (!currentBuilding) {
+                document.getElementById("header-building-name").innerHTML =
+                  `<i class="fa-solid fa-location-dot text-emerald-600 text-[10px]"></i> Tastea Campus Partner`;
+              }
+
+              await loadBuildingMenu();
+            };
+
+            async function loadBuildingMenu() {
+              if (supabaseClient) {
+                try {
+                  let items = null;
+
+                  if (currentBuilding) {
+                    const { data: bldgItems } = await supabaseClient
+                      .from("menu_items")
+                      .select("*")
+                      .eq("is_active_today", true)
+                      .eq("building_id", currentBuilding.id);
+                    if (bldgItems && bldgItems.length > 0) items = bldgItems;
+                  }
+
+                  if (!items || items.length === 0) {
+                    const { data: globalItems } = await supabaseClient
+                      .from("menu_items")
+                      .select("*")
+                      .eq("is_active_today", true)
+                      .is("building_id", null);
+                    if (globalItems && globalItems.length > 0) items = globalItems;
+                  }
+
+                  if (items && items.length > 0) {
+                    const v = items.find((i) => i.category_type === "veg");
+                    const nv = items.find((i) => i.category_type === "nonveg");
+
+                    if (v) {
+                      currentDayMenu.veg = {
+                        id: v.id,
+                        name: v.item_name,
+                        portion: v.portion_badge || "Pack of 2 Pcs",
+                        price:
+                          v.final_price ||
+                          Math.round(
+                            v.base_price - (v.base_price * v.discount_pct) / 100,
+                          ),
+                        oldPrice: v.base_price,
+                        badge: `Save ${v.discount_pct}%`,
+                        image: v.image_url || currentDayMenu.veg.image,
+                      };
+                    }
+
+                    if (nv) {
+                      currentDayMenu.nonveg = {
+                        id: nv.id,
+                        name: nv.item_name,
+                        portion: nv.portion_badge || "Pack of 2 Pcs",
+                        price:
+                          nv.final_price ||
+                          Math.round(
+                            nv.base_price - (nv.base_price * nv.discount_pct) / 100,
+                          ),
+                        oldPrice: nv.base_price,
+                        badge: `Save ${nv.discount_pct}%`,
+                        image: nv.image_url || currentDayMenu.nonveg.image,
+                      };
+                    }
+                  }
+                } catch (e) {
+                  console.warn("Menu fetch error:", e);
+                }
+              }
+
+              // Render Veg Card & Button
+              document.getElementById("veg-name").innerText = currentDayMenu.veg.name;
+              document.getElementById("veg-portion").innerText =
+                currentDayMenu.veg.portion;
+              document.getElementById("veg-price").innerText =
+                `₹${currentDayMenu.veg.price}`;
+              document.getElementById("veg-old-price").innerText =
+                `₹${currentDayMenu.veg.oldPrice}`;
+              document.getElementById("veg-badge").innerText =
+                currentDayMenu.veg.badge;
+              document.getElementById("veg-img").src = currentDayMenu.veg.image;
+              document.getElementById("btn-veg-price").innerText =
+                currentDayMenu.veg.price;
+
+              // Render Non-Veg Card & Button
+              document.getElementById("nonveg-name").innerText =
+                currentDayMenu.nonveg.name;
+              document.getElementById("nonveg-portion").innerText =
+                currentDayMenu.nonveg.portion;
+              document.getElementById("nonveg-price").innerText =
+                `₹${currentDayMenu.nonveg.price}`;
+              document.getElementById("nonveg-old-price").innerText =
+                `₹${currentDayMenu.nonveg.oldPrice}`;
+              document.getElementById("nonveg-badge").innerText =
+                currentDayMenu.nonveg.badge;
+              document.getElementById("nonveg-img").src = currentDayMenu.nonveg.image;
+              document.getElementById("btn-nonveg-price").innerText =
+                currentDayMenu.nonveg.price;
+            }
+
+            async function fetchUserDue() {
+              if (!currentUser || !supabaseClient) return;
+              try {
+                const { data: orders } = await supabaseClient
+                  .from("food_orders")
+                  .select("*")
+                  .eq("user_phone", currentUser.phone)
+                  .order("created_at", { ascending: false });
+
+                userOrdersList = orders || [];
+
+                if (orders) {
+                  totalPendingDue = orders
+                    .filter((o) => o.payment_status === "credit_due")
+                    .reduce((sum, o) => sum + Number(o.total_price || 0), 0);
+                }
+
+                const { data: cust } = await supabaseClient
+                  .from("customers")
+                  .select("credit_limit")
+                  .eq("phone", currentUser.phone)
+                  .maybeSingle();
+
+                if (cust && cust.credit_limit !== null) {
+                  userCreditLimit = Number(cust.credit_limit);
+                }
+              } catch (e) {
+                console.warn("Due calculation error:", e);
+              }
+
+              const availableLimit = Math.max(0, userCreditLimit - totalPendingDue);
+
+              document.getElementById("hero-available-credit").innerText =
+                `₹${availableLimit}`;
+              document.getElementById("hero-credit-limit-sub").innerHTML =
+                `Approved Limit: ₹${userCreditLimit} • Due: <span class="text-amber-400 font-bold underline cursor-pointer" onclick="openLedgerModal()">₹${totalPendingDue} (Tap to Pay)</span>`;
+              document.getElementById("ledger-modal-due").innerText =
+                `₹${totalPendingDue}`;
+              document.getElementById("history-total-unpaid").innerText =
+                `₹${totalPendingDue}`;
+              document.getElementById("user-credit-limit-badge").innerText =
+                `₹${userCreditLimit}`;
+              document.getElementById("credit-available-badge").innerText =
+                `Available: ₹${availableLimit}`;
+              document.getElementById("gpay-intent-btn").href =
+                `upi://pay?pa=${UPI_ID}&pn=Tastea&am=${totalPendingDue}&cu=INR&tn=Snack_Bill`;
+            }
+
+            function updateQty(type, delta) {
+              quantities[type] = Math.max(1, Math.min(10, quantities[type] + delta));
+              document.getElementById(`qty-${type}`).innerText = quantities[type];
+            }
+
+            // Profile & Registration Functions
+            function openProfileModal() {
+              if (!typeof currentUser === "undefined" || !currentUser) {
+                openLoginModal();
+                return;
+              }
+              const nameEl = document.getElementById("profile-display-name");
+              const inputName = document.getElementById("prof-input-name");
+              const inputPhone = document.getElementById("prof-input-phone");
+              const inputBlock = document.getElementById("prof-input-block");
+              const inputFloor = document.getElementById("prof-input-floor");
+              const modal = document.getElementById("profile-modal");
+
+              if (nameEl && currentUser.name) nameEl.innerText = currentUser.name;
+              if (inputName) inputName.value = currentUser.name || "";
+              if (inputPhone) inputPhone.value = currentUser.phone || "";
+              if (inputBlock) inputBlock.value = currentUser.block || "";
+              if (inputFloor) inputFloor.value = currentUser.floor || "";
+              if (modal) modal.classList.remove("hidden");
+            }
+
+            function closeProfileModal() {
+              document.getElementById("profile-modal").classList.add("hidden");
+            }
+
+            function saveProfileChanges() {
+              const name = document.getElementById("prof-input-name").value.trim();
+              const phone = document.getElementById("prof-input-phone").value.trim();
+              const block = document.getElementById("prof-input-block").value.trim();
+              const floor = document.getElementById("prof-input-floor").value.trim();
+
+              if (!name || phone.length < 10 || !block || !floor) {
+                alert("Please fill in Name, 10-digit Phone, Block, and Floor.");
+                return;
+              }
+
+              currentUser = { name, phone, block, floor };
+              localStorage.setItem("tastea_user", JSON.stringify(currentUser));
+              document.getElementById("user-display").innerHTML =
+                `<i class="fa-regular fa-user text-emerald-600"></i> ${name.split(" ")[0]}`;
+              closeProfileModal();
+              fetchUserDue();
+              alert("✅ Profile details updated!");
+            }
+
+            function openLoginModal() {
+              const modal = document.getElementById("login-modal");
+              if (modal) {
+                modal.classList.remove("hidden");
               }
             }
-          } catch (e) {
-            console.warn("Menu fetch error:", e);
-          }
-        }
+            async function handleOrderPlacement(type) {
+              if (!currentUser) {
+                openProfileModal();
+                return;
+              }
 
-        // Render Veg Card & Button
-        document.getElementById("veg-name").innerText = currentDayMenu.veg.name;
-        document.getElementById("veg-portion").innerText =
-          currentDayMenu.veg.portion;
-        document.getElementById("veg-price").innerText =
-          `₹${currentDayMenu.veg.price}`;
-        document.getElementById("veg-old-price").innerText =
-          `₹${currentDayMenu.veg.oldPrice}`;
-        document.getElementById("veg-badge").innerText =
-          currentDayMenu.veg.badge;
-        document.getElementById("veg-img").src = currentDayMenu.veg.image;
-        document.getElementById("btn-veg-price").innerText =
-          currentDayMenu.veg.price;
+              const item = currentDayMenu[type];
+              const qty = quantities[type];
+              const total = qty * item.price;
 
-        // Render Non-Veg Card & Button
-        document.getElementById("nonveg-name").innerText =
-          currentDayMenu.nonveg.name;
-        document.getElementById("nonveg-portion").innerText =
-          currentDayMenu.nonveg.portion;
-        document.getElementById("nonveg-price").innerText =
-          `₹${currentDayMenu.nonveg.price}`;
-        document.getElementById("nonveg-old-price").innerText =
-          `₹${currentDayMenu.nonveg.oldPrice}`;
-        document.getElementById("nonveg-badge").innerText =
-          currentDayMenu.nonveg.badge;
-        document.getElementById("nonveg-img").src = currentDayMenu.nonveg.image;
-        document.getElementById("btn-nonveg-price").innerText =
-          currentDayMenu.nonveg.price;
-      }
+              if (totalPendingDue + total > userCreditLimit) {
+                alert(
+                  `⚠️ Credit Limit Exceeded!\n\nYour limit is ₹${userCreditLimit} (Current Due: ₹${totalPendingDue}).\nPlease clear previous bills via UPI to place new orders.`,
+                );
+                openLedgerModal();
+                return;
+              }
 
-      async function fetchUserDue() {
-        if (!currentUser || !supabaseClient) return;
-        try {
-          const { data: orders } = await supabaseClient
-            .from("food_orders")
-            .select("*")
-            .eq("user_phone", currentUser.phone)
-            .order("created_at", { ascending: false });
+              const payload = {
+                user_name: currentUser.name,
+                user_phone: currentUser.phone,
+                customer_block: currentUser.block,
+                customer_floor: currentUser.floor,
+                item_name: item.name,
+                portion_badge: item.portion,
+                quantity: qty,
+                total_price: total,
+                payment_status: "credit_due",
+                building_id: currentBuilding ? currentBuilding.id : null,
+              };
 
-          userOrdersList = orders || [];
+              if (supabaseClient) {
+                try {
+                  await supabaseClient.from("food_orders").insert([payload]);
+                } catch (err) {
+                  console.warn("Order insert error:", err);
+                }
+              }
 
-          if (orders) {
-            totalPendingDue = orders
-              .filter((o) => o.payment_status === "credit_due")
-              .reduce((sum, o) => sum + Number(o.total_price || 0), 0);
-          }
+              totalPendingDue += total;
+              await fetchUserDue();
 
-          const { data: cust } = await supabaseClient
-            .from("customers")
-            .select("credit_limit")
-            .eq("phone", currentUser.phone)
-            .maybeSingle();
+              alert(
+                `🎉 Order Confirmed!\n\n${item.name} (${qty} Qty)\nDelivery To: ${currentUser.block} • ${currentUser.floor}\nTotal: ₹${total}\n\nAdded to your Pay Later Ledger.`,
+              );
+            }
 
-          if (cust && cust.credit_limit !== null) {
-            userCreditLimit = Number(cust.credit_limit);
-          }
-        } catch (e) {
-          console.warn("Due calculation error:", e);
-        }
+            // Subscriptions Modal & WhatsApp Dispatch
+            function openSubscriptionModal() {
+              document
+                .getElementById("subscription-modal")
+                .classList.remove("hidden");
+            }
 
-        const availableLimit = Math.max(0, userCreditLimit - totalPendingDue);
+            function closeSubscriptionModal() {
+              document.getElementById("subscription-modal").classList.add("hidden");
+            }
 
-        document.getElementById("hero-available-credit").innerText =
-          `₹${availableLimit}`;
-        document.getElementById("hero-credit-limit-sub").innerHTML =
-          `Approved Limit: ₹${userCreditLimit} • Due: <span class="text-amber-400 font-bold underline cursor-pointer" onclick="openLedgerModal()">₹${totalPendingDue} (Tap to Pay)</span>`;
-        document.getElementById("ledger-modal-due").innerText =
-          `₹${totalPendingDue}`;
-        document.getElementById("history-total-unpaid").innerText =
-          `₹${totalPendingDue}`;
-        document.getElementById("user-credit-limit-badge").innerText =
-          `₹${userCreditLimit}`;
-        document.getElementById("credit-available-badge").innerText =
-          `Available: ₹${availableLimit}`;
-        document.getElementById("gpay-intent-btn").href =
-          `upi://pay?pa=${UPI_ID}&pn=Tastea&am=${totalPendingDue}&cu=INR&tn=Snack_Bill`;
-      }
+            function sendSubscriptionWhatsApp() {
+              const selectedMeals = [];
+              if (document.getElementById("sub-meal-bf").checked)
+                selectedMeals.push("Breakfast");
+              if (document.getElementById("sub-meal-lunch").checked)
+                selectedMeals.push("Meals/Lunch");
+              if (document.getElementById("sub-meal-dinner").checked)
+                selectedMeals.push("Dinner");
 
-      function updateQty(type, delta) {
-        quantities[type] = Math.max(1, Math.min(10, quantities[type] + delta));
-        document.getElementById(`qty-${type}`).innerText = quantities[type];
-      }
+              if (selectedMeals.length === 0) {
+                alert("Please select at least one meal service.");
+                return;
+              }
 
-      // Profile & Registration Functions
-      function openProfileModal() {
-        if (!typeof currentUser === "undefined" || !currentUser) {
-          openLoginModal();
-          return;
-        }
-        const nameEl = document.getElementById("profile-display-name");
-        const inputName = document.getElementById("prof-input-name");
-        const inputPhone = document.getElementById("prof-input-phone");
-        const inputBlock = document.getElementById("prof-input-block");
-        const inputFloor = document.getElementById("prof-input-floor");
-        const modal = document.getElementById("profile-modal");
+              const planCycle =
+                document.querySelector('input[name="plan_duration"]:checked')
+                  ?.value || "Weekly Plan";
+              const campus = currentBuilding
+                ? currentBuilding.campus_name
+                : "Our Campus";
+              const staffName = currentUser ? currentUser.name : "Staff Member";
+              const spot = currentUser
+                ? `${currentUser.block} • ${currentUser.floor}`
+                : "Staff Room";
 
-        if (nameEl && currentUser.name) nameEl.innerText = currentUser.name;
-        if (inputName) inputName.value = currentUser.name || "";
-        if (inputPhone) inputPhone.value = currentUser.phone || "";
-        if (inputBlock) inputBlock.value = currentUser.block || "";
-        if (inputFloor) inputFloor.value = currentUser.floor || "";
-        if (modal) modal.classList.remove("hidden");
-      }
+              const message =
+                `🍱 *Tastea Meal Subscription Enquiry*\n\n` +
+                `🏫 *Campus:* ${campus}\n` +
+                `📍 *Delivery Spot:* ${spot}\n` +
+                `👤 *Staff Name:* ${staffName}\n\n` +
+                `📋 *Selected Meals:* ${selectedMeals.join(", ")}\n` +
+                `⏱️ *Plan Cycle:* ${planCycle}\n\n` +
+                `Please share the upcoming menu schedule and pricing options!`;
 
-      function closeProfileModal() {
-        document.getElementById("profile-modal").classList.add("hidden");
-      }
+              window.open(
+                `https://wa.me/${ADMIN_WHATSAPP}?text=${encodeURIComponent(message)}`,
+                "_blank",
+              );
+            }
 
-      function saveProfileChanges() {
-        const name = document.getElementById("prof-input-name").value.trim();
-        const phone = document.getElementById("prof-input-phone").value.trim();
-        const block = document.getElementById("prof-input-block").value.trim();
-        const floor = document.getElementById("prof-input-floor").value.trim();
+            // History Modal Controller
+            function openHistoryModal() {
+              if (!currentUser) {
+                openProfileModal();
+                return;
+              }
+              renderHistoryItems();
+              document.getElementById("history-modal").classList.remove("hidden");
+            }
 
-        if (!name || phone.length < 10 || !block || !floor) {
-          alert("Please fill in Name, 10-digit Phone, Block, and Floor.");
-          return;
-        }
+            function closeHistoryModal() {
+              document.getElementById("history-modal").classList.add("hidden");
+            }
 
-        currentUser = { name, phone, block, floor };
-        localStorage.setItem("tastea_user", JSON.stringify(currentUser));
-        document.getElementById("user-display").innerHTML =
-          `<i class="fa-regular fa-user text-emerald-600"></i> ${name.split(" ")[0]}`;
-        closeProfileModal();
-        fetchUserDue();
-        alert("✅ Profile details updated!");
-      }
+            function renderHistoryItems() {
+              const container = document.getElementById("history-items-container");
+              container.innerHTML = "";
 
-      function openLoginModal() {
-        const modal = document.getElementById("login-modal");
-        if (modal) {
-          modal.classList.remove("hidden");
-        }
-      }
-      async function handleOrderPlacement(type) {
-        if (!currentUser) {
-          openProfileModal();
-          return;
-        }
+              if (userOrdersList.length === 0) {
+                container.innerHTML = `<p class="text-center text-slate-400 text-xs py-8">No order history found yet.</p>`;
+                return;
+              }
 
-        const item = currentDayMenu[type];
-        const qty = quantities[type];
-        const total = qty * item.price;
+              userOrdersList.forEach((o) => {
+                const dateStr = new Date(
+                  o.created_at || Date.now(),
+                ).toLocaleDateString("en-IN", {
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
+                const isPaid = o.payment_status === "paid";
+                const statusBadge = isPaid
+                  ? `<span class="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded uppercase">Paid</span>`
+                  : `<span class="bg-rose-100 text-rose-800 text-[10px] font-black px-2 py-0.5 rounded uppercase">Credit Due</span>`;
 
-        if (totalPendingDue + total > userCreditLimit) {
-          alert(
-            `⚠️ Credit Limit Exceeded!\n\nYour limit is ₹${userCreditLimit} (Current Due: ₹${totalPendingDue}).\nPlease clear previous bills via UPI to place new orders.`,
-          );
-          openLedgerModal();
-          return;
-        }
+                container.innerHTML += `
+                          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex justify-between items-center text-xs">
+                              <div>
+                                  <p class="font-extrabold text-slate-900">${o.item_name}</p>
+                                  <p class="text-[10px] text-slate-500 font-semibold">${dateStr} • Qty: ${o.quantity}</p>
+                              </div>
+                              <div class="text-right space-y-1">
+                                  <span class="font-black text-slate-900 block">₹${o.total_price}</span>
+                                  ${statusBadge}
+                              </div>
+                          </div>
+                      `;
+              });
+            }
 
-        const payload = {
-          user_name: currentUser.name,
-          user_phone: currentUser.phone,
-          customer_block: currentUser.block,
-          customer_floor: currentUser.floor,
-          item_name: item.name,
-          portion_badge: item.portion,
-          quantity: qty,
-          total_price: total,
-          payment_status: "credit_due",
-          building_id: currentBuilding ? currentBuilding.id : null,
-        };
+            function confirmPayLater() {
+              closeLedgerModal();
+              alert(
+                "✅ Added to your Pay Later account. You can clear this bill at the end of the week!",
+              );
+            }
 
-        if (supabaseClient) {
-          try {
-            await supabaseClient.from("food_orders").insert([payload]);
-          } catch (err) {
-            console.warn("Order insert error:", err);
-          }
-        }
-
-        totalPendingDue += total;
-        await fetchUserDue();
-
-        alert(
-          `🎉 Order Confirmed!\n\n${item.name} (${qty} Qty)\nDelivery To: ${currentUser.block} • ${currentUser.floor}\nTotal: ₹${total}\n\nAdded to your Pay Later Ledger.`,
-        );
-      }
-
-      // Subscriptions Modal & WhatsApp Dispatch
-      function openSubscriptionModal() {
-        document
-          .getElementById("subscription-modal")
-          .classList.remove("hidden");
-      }
-
-      function closeSubscriptionModal() {
-        document.getElementById("subscription-modal").classList.add("hidden");
-      }
-
-      function sendSubscriptionWhatsApp() {
-        const selectedMeals = [];
-        if (document.getElementById("sub-meal-bf").checked)
-          selectedMeals.push("Breakfast");
-        if (document.getElementById("sub-meal-lunch").checked)
-          selectedMeals.push("Meals/Lunch");
-        if (document.getElementById("sub-meal-dinner").checked)
-          selectedMeals.push("Dinner");
-
-        if (selectedMeals.length === 0) {
-          alert("Please select at least one meal service.");
-          return;
-        }
-
-        const planCycle =
-          document.querySelector('input[name="plan_duration"]:checked')
-            ?.value || "Weekly Plan";
-        const campus = currentBuilding
-          ? currentBuilding.campus_name
-          : "Our Campus";
-        const staffName = currentUser ? currentUser.name : "Staff Member";
-        const spot = currentUser
-          ? `${currentUser.block} • ${currentUser.floor}`
-          : "Staff Room";
-
-        const message =
-          `🍱 *Tastea Meal Subscription Enquiry*\n\n` +
-          `🏫 *Campus:* ${campus}\n` +
-          `📍 *Delivery Spot:* ${spot}\n` +
-          `👤 *Staff Name:* ${staffName}\n\n` +
-          `📋 *Selected Meals:* ${selectedMeals.join(", ")}\n` +
-          `⏱️ *Plan Cycle:* ${planCycle}\n\n` +
-          `Please share the upcoming menu schedule and pricing options!`;
-
-        window.open(
-          `https://wa.me/${ADMIN_WHATSAPP}?text=${encodeURIComponent(message)}`,
-          "_blank",
-        );
-      }
-
-      // History Modal Controller
-      function openHistoryModal() {
-        if (!currentUser) {
-          openProfileModal();
-          return;
-        }
-        renderHistoryItems();
-        document.getElementById("history-modal").classList.remove("hidden");
-      }
-
-      function closeHistoryModal() {
-        document.getElementById("history-modal").classList.add("hidden");
-      }
-
-      function renderHistoryItems() {
-        const container = document.getElementById("history-items-container");
-        container.innerHTML = "";
-
-        if (userOrdersList.length === 0) {
-          container.innerHTML = `<p class="text-center text-slate-400 text-xs py-8">No order history found yet.</p>`;
-          return;
-        }
-
-        userOrdersList.forEach((o) => {
-          const dateStr = new Date(
-            o.created_at || Date.now(),
-          ).toLocaleDateString("en-IN", {
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          });
-          const isPaid = o.payment_status === "paid";
-          const statusBadge = isPaid
-            ? `<span class="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded uppercase">Paid</span>`
-            : `<span class="bg-rose-100 text-rose-800 text-[10px] font-black px-2 py-0.5 rounded uppercase">Credit Due</span>`;
-
-          container.innerHTML += `
-                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex justify-between items-center text-xs">
-                        <div>
-                            <p class="font-extrabold text-slate-900">${o.item_name}</p>
-                            <p class="text-[10px] text-slate-500 font-semibold">${dateStr} • Qty: ${o.quantity}</p>
-                        </div>
-                        <div class="text-right space-y-1">
-                            <span class="font-black text-slate-900 block">₹${o.total_price}</span>
-                            ${statusBadge}
-                        </div>
-                    </div>
-                `;
-        });
-      }
-
-      function confirmPayLater() {
-        closeLedgerModal();
-        alert(
-          "✅ Added to your Pay Later account. You can clear this bill at the end of the week!",
-        );
-      }
-
-      function openLedgerModal() {
-        if (!currentUser) {
-          openProfileModal();
-          return;
-        }
-        fetchUserDue();
-        document.getElementById("ledger-modal").classList.remove("hidden");
-      }
-      function closeLedgerModal() {
-        document.getElementById("ledger-modal").classList.add("hidden");
-      }
-      function openGallery(imgUrl, title) {
-        document.getElementById("gallery-img").src = imgUrl;
-        document.getElementById("gallery-title").innerText = title;
-        document.getElementById("gallery-modal").classList.remove("hidden");
-      }
-      function closeGallery() {
-        document.getElementById("gallery-modal").classList.add("hidden");
-      }
-      function scrollCarousel(distance) {
-        document
-          .getElementById("weekly-carousel")
-          .scrollBy({ left: distance, behavior: "smooth" });
-      }
+            function openLedgerModal() {
+              if (!currentUser) {
+                openProfileModal();
+                return;
+              }
+              fetchUserDue();
+              document.getElementById("ledger-modal").classList.remove("hidden");
+            }
+            function closeLedgerModal() {
+              document.getElementById("ledger-modal").classList.add("hidden");
+            }
+            function openGallery(imgUrl, title) {
+              document.getElementById("gallery-img").src = imgUrl;
+              document.getElementById("gallery-title").innerText = title;
+              document.getElementById("gallery-modal").classList.remove("hidden");
+            }
+            function closeGallery() {
+              document.getElementById("gallery-modal").classList.add("hidden");
+            }
+            function scrollCarousel(distance) {
+              document
+                .getElementById("weekly-carousel")
+                .scrollBy({ left: distance, behavior: "smooth" });
+            }
+            <!-- Login Modal Structure -->
+      <div id="login-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div class="bg-white rounded-2xl p-6 w-11/12 max-w-md shadow-xl">
+              <h2 class="text-xl font-bold mb-4 text-slate-800">Welcome to Tastea</h2>
+              <p class="text-sm text-slate-600 mb-4">Please enter your details to continue ordering from your location pass.</p>
+              <input type="text" id="login-name" placeholder="Your Name" class="w-full p-3 border rounded-lg mb-3">
+              <input type="tel" id="login-phone" placeholder="10-Digit Phone Number" class="w-full p-3 border rounded-lg mb-4">
+              <button onclick="saveLoginDetails()" class="w-full bg-emerald-600 text-white p-3 rounded-lg font-semibold">Confirm & Continue</button>
+          </div>
+      </div>
     </script>
   </body>
 </html>
