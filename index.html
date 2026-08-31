@@ -1440,15 +1440,30 @@
         }
     });
 </script>
-            <div id="login-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                <div class="bg-white rounded-2xl p-6 w-11/12 max-w-md shadow-xl">
-                    <h2 class="text-xl font-bold mb-4 text-slate-800">Welcome to Tastea</h2>
-                    <p class="text-sm text-slate-600 mb-4">Please enter your details to continue ordering from your location pass.</p>
-                    <input type="text" id="login-name" placeholder="Your Name" class="w-full p-3 border rounded-lg mb-3">
-                    <input type="tel" id="login-phone" placeholder="10-Digit Phone Number" class="w-full p-3 border rounded-lg mb-4">
-                    <button onclick="saveLoginDetails()" class="w-full bg-emerald-600 text-white p-3 rounded-lg font-semibold">Confirm & Continue</button>
-                </div>
-            </div>
-    </script>
+        </script>
+        <!-- Login Modal Structure -->
+<div id="login-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div class="bg-white rounded-2xl p-6 w-11/12 max-w-md shadow-xl">
+        <h2 class="text-xl font-bold mb-4 text-slate-800">Welcome to Tastea</h2>
+        <p class="text-sm text-slate-600 mb-4">Please enter your details to continue ordering from your location pass.</p>
+        <input type="text" id="login-name" placeholder="Your Name" class="w-full p-3 border rounded-lg mb-3">
+        <input type="tel" id="login-phone" placeholder="10-Digit Phone Number" class="w-full p-3 border rounded-lg mb-4">
+        <button onclick="saveLoginDetails()" class="w-full bg-emerald-600 text-white p-3 rounded-lg font-semibold">Confirm & Continue</button>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const savedUser = localStorage.getItem("tastea_user");
+        if (savedUser) {
+            window.currentUser = JSON.parse(savedUser);
+        } else {
+            const loginModal = document.getElementById("login-modal");
+            if (loginModal) {
+                loginModal.classList.remove("hidden");
+            }
+        }
+    });
+</script>
   </body>
 </html>
