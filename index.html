@@ -1427,8 +1427,8 @@
                       .scrollBy({ left: distance, behavior: "smooth" });
                   }
                   <!-- Login Modal Structure -->
-                  <script>
-    document.addEventListener("DOMContentLoaded", () => {
+                 <script>
+    document.addEventListener("DOMContentLoaded", function() {
         const savedUser = localStorage.getItem("tastea_user");
         if (savedUser) {
             window.currentUser = JSON.parse(savedUser);
