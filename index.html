@@ -1453,6 +1453,36 @@
 </div>
 
 <script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const savedUser = localStorage.getItem("tastea_user");
+        if (savedUser) {
+            window.currentUser = JSON.parse(savedUser);
+        } else {
+            const loginModal = document.getElementById("login-modal");
+            if (loginModal) {
+                loginModal.classList.remove("hidden");
+            }
+        }
+    });
+
+    function saveLoginDetails() {
+        const name = document.getElementById("login-name").value.trim();
+        const phone = document.getElementById("login-phone").value.trim();
+
+        if (!name || phone.length !== 10) {
+            alert("Please enter a valid name and 10-digit phone number.");
+            return;
+        }
+
+        const userData = { name, phone };
+        localStorage.setItem("tastea_user", JSON.stringify(userData));
+        window.currentUser = userData;
+
+        document.getElementById("login-modal").classList.add("hidden");
+        location.reload();
+    }
+</script>
     document.addEventListener("DOMContentLoaded", function() {
         const savedUser = localStorage.getItem("tastea_user");
         if (savedUser) {
