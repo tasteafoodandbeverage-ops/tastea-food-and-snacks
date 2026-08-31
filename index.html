@@ -1185,19 +1185,23 @@
 
       // Profile & Registration Functions
       function openProfileModal() {
-        if (!currentUser) {
+        if (!typeof currentUser === "undefined" || !currentUser) {
           openLoginModal();
           return;
         }
-        document.getElementById("profile-display-name").innerText =
-          currentUser.name;
-        document.getElementById("prof-input-name").value = currentUser.name;
-        document.getElementById("prof-input-phone").value = currentUser.phone;
-        document.getElementById("prof-input-block").value =
-          currentUser.block || "";
-        document.getElementById("prof-input-floor").value =
-          currentUser.floor || "";
-        document.getElementById("profile-modal").classList.remove("hidden");
+        const nameEl = document.getElementById("profile-display-name");
+        const inputName = document.getElementById("prof-input-name");
+        const inputPhone = document.getElementById("prof-input-phone");
+        const inputBlock = document.getElementById("prof-input-block");
+        const inputFloor = document.getElementById("prof-input-floor");
+        const modal = document.getElementById("profile-modal");
+
+        if (nameEl && currentUser.name) nameEl.innerText = currentUser.name;
+        if (inputName) inputName.value = currentUser.name || "";
+        if (inputPhone) inputPhone.value = currentUser.phone || "";
+        if (inputBlock) inputBlock.value = currentUser.block || "";
+        if (inputFloor) inputFloor.value = currentUser.floor || "";
+        if (modal) modal.classList.remove("hidden");
       }
 
       function closeProfileModal() {
@@ -1225,9 +1229,11 @@
       }
 
       function openLoginModal() {
-        openProfileModal();
+        const modal = document.getElementById("login-modal");
+        if (modal) {
+          modal.classList.remove("hidden");
+        }
       }
-
       async function handleOrderPlacement(type) {
         if (!currentUser) {
           openProfileModal();
