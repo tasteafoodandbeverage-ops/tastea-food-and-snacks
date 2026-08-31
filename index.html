@@ -11,6 +11,36 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
       rel="stylesheet"
     />
+    const urlParams = new URLSearchParams(window.location.search); const
+    scannedLocation = urlParams.get('location') || urlParams.get('table') ||
+    'Default Location'; // Store it globally and remove the loading blocker
+    window.currentLocation = scannedLocation;
+    localStorage.setItem("tastea_location", scannedLocation);
+    document.addEventListener("DOMContentLoaded", function() { const spinner =
+    document.getElementById("loading-spinner"); if (spinner)
+    spinner.classList.add("hidden"); const menuContainer =
+    document.getElementById("menu-container"); if (menuContainer)
+    menuContainer.classList.remove("hidden"); }); const orderPayload = {
+    customer_name: window.currentUser?.name, phone: window.currentUser?.phone,
+    items: cartItems, total_amount: cartTotal, location: scannedLocation, //
+    Captured straight from the QR scan status: 'Pending' }; async function
+    loadQRLocation() { const urlParams = new
+    URLSearchParams(window.location.search); const qrCode = urlParams.get('qr')
+    || urlParams.get('code'); if (!qrCode) { // Fallback if opened without a QR
+    code unlockApp("Default Store Location"); return; } // Fetch location fed by
+    admin from Supabase const { data, error } = await supabase
+    .from('qr_locations') .select('location_name') .eq('qr_code', qrCode)
+    .single(); if (error || !data) { console.error("QR location not found:",
+    error); unlockApp("General Location"); } else {
+    unlockApp(data.location_name); } } function unlockApp(locationName) {
+    window.currentLocation = locationName;
+    localStorage.setItem("tastea_location", locationName); // Hide loading and
+    show menu const spinner = document.getElementById("loading-spinner"); if
+    (spinner) spinner.classList.add("hidden"); const menuContainer =
+    document.getElementById("menu-container"); if (menuContainer)
+    menuContainer.classList.remove("hidden"); console.log("App unlocked for
+    location:", locationName); } // Run on page load
+    window.addEventListener('DOMContentLoaded', loadQRLocation);
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
