@@ -1,0 +1,1574 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tastea Enterprise Control Hub</title>
+    <!-- Tailwind CSS CDN with dark mode support -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                500: "#059669",
+                600: "#047857",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <!-- QR Code Styling Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.6.0-rc.1/lib/qr-code-styling.js"></script>
+    <!-- Supabase JS Client SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        #printable-section,
+        #printable-section * {
+          visibility: visible;
+        }
+        #printable-section {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          display: block !important;
+        }
+        .no-print {
+          display: none !important;
+        }
+      }
+      .tab-btn.active {
+        background-color: #059669 !important;
+        color: #ffffff !important;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-slate-100 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 min-h-screen flex flex-col select-none antialiased transition-colors duration-200"
+  >
+    <!-- Top Navigation Bar -->
+    <header
+      class="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 no-print transition-colors duration-200 shadow-sm"
+    >
+      <div
+        class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between"
+      >
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-600/30"
+          >
+            <i class="fa-solid fa-mug-hot text-lg"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span
+                class="font-black tracking-wider text-base text-slate-900 dark:text-white"
+                >TASTEA</span
+              >
+              <span
+                class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase"
+                >Control Hub</span
+              >
+            </div>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400">
+              Kitchen Ops & Dispatch
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- 15-Sec Auto Refresh Pill -->
+          <div
+            class="bg-slate-200/80 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-bold px-3 py-1.5 rounded-xl flex items-center gap-2"
+          >
+            <span
+              class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"
+            ></span>
+            <span
+              >Sync in
+              <span
+                id="sync-timer"
+                class="text-emerald-600 dark:text-emerald-400 font-mono font-black"
+                >15s</span
+              ></span
+            >
+          </div>
+
+          <!-- Theme Toggle Button -->
+          <button
+            onclick="toggleTheme()"
+            class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-xs font-semibold p-2.5 rounded-xl flex items-center justify-center transition active:scale-95"
+            title="Toggle Day/Night Mode"
+          >
+            <i id="theme-icon" class="fa-solid fa-sun text-amber-400"></i>
+          </button>
+
+          <button
+            onclick="printManifest()"
+            class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5 transition active:scale-95"
+          >
+            <i
+              class="fa-solid fa-print text-emerald-600 dark:text-emerald-400"
+            ></i>
+            <span class="hidden sm:inline">Bag Slips</span>
+          </button>
+
+          <button
+            onclick="shareWhatsAppManifest()"
+            class="bg-green-600/10 hover:bg-green-600/20 border border-green-500/40 text-green-700 dark:text-green-400 text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5 transition active:scale-95"
+          >
+            <i class="fa-brands fa-whatsapp text-sm"></i>
+            <span class="hidden sm:inline">WhatsApp</span>
+          </button>
+
+          <button
+            onclick="manualSync()"
+            class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition shadow-lg shadow-emerald-600/20 active:scale-95"
+          >
+            <i class="fa-solid fa-rotate text-xs"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div
+        class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-200 dark:border-slate-800/80 flex gap-1 overflow-x-auto py-1.5 scrollbar-none"
+      >
+        <button
+          onclick="switchTab('ops')"
+          id="tab-btn-ops"
+          class="tab-btn active px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition flex items-center gap-2"
+        >
+          <i class="fa-solid fa-fire-burner"></i> Operations & Dispatch
+        </button>
+        <button
+          onclick="switchTab('menu')"
+          id="tab-btn-menu"
+          class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition flex items-center gap-2"
+        >
+          <i class="fa-solid fa-utensils"></i> Menu & Kitchen Toggles
+        </button>
+        <button
+          onclick="switchTab('buildings')"
+          id="tab-btn-buildings"
+          class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition flex items-center gap-2"
+        >
+          <i class="fa-solid fa-building"></i> Campuses & QR
+        </button>
+        <button
+          onclick="switchTab('customers')"
+          id="tab-btn-customers"
+          class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition flex items-center gap-2"
+        >
+          <i class="fa-solid fa-users"></i> Customers & CRM
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace Area -->
+    <main
+      class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 space-y-6 no-print"
+    >
+      <!-- TAB 1: OPERATIONS & DISPATCH -->
+      <div id="tab-view-ops" class="space-y-6">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div
+            class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm"
+          >
+            <div class="flex justify-between items-start">
+              <div>
+                <p
+                  class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider"
+                >
+                  🟢 Veg Packets
+                </p>
+                <h3
+                  class="text-3xl font-black text-slate-900 dark:text-white mt-1"
+                  id="total-veg-qty"
+                >
+                  0
+                </h3>
+              </div>
+              <span
+                class="w-10 h-10 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/40 rounded-xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-lg"
+                >🥗</span
+              >
+            </div>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-2">
+              Live batch demand today
+            </p>
+          </div>
+
+          <div
+            class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm"
+          >
+            <div class="flex justify-between items-start">
+              <div>
+                <p
+                  class="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider"
+                >
+                  🔴 Non-Veg Packets
+                </p>
+                <h3
+                  class="text-3xl font-black text-slate-900 dark:text-white mt-1"
+                  id="total-nonveg-qty"
+                >
+                  0
+                </h3>
+              </div>
+              <span
+                class="w-10 h-10 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/40 rounded-xl flex items-center justify-center text-rose-600 dark:text-rose-400 text-lg"
+                >🍗</span
+              >
+            </div>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-2">
+              Live batch demand today
+            </p>
+          </div>
+
+          <div
+            class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm"
+          >
+            <div class="flex justify-between items-start">
+              <div>
+                <p
+                  class="text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider"
+                >
+                  Collected (UPI/Cash)
+                </p>
+                <h3
+                  class="text-3xl font-black text-blue-600 dark:text-blue-400 mt-1"
+                  id="total-received"
+                >
+                  ₹0
+                </h3>
+              </div>
+              <span
+                class="w-10 h-10 bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800/40 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400 text-lg"
+              >
+                <i class="fa-solid fa-wallet"></i>
+              </span>
+            </div>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-2">
+              Paid settlements
+            </p>
+          </div>
+
+          <div
+            class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm"
+          >
+            <div class="flex justify-between items-start">
+              <div>
+                <p
+                  class="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider"
+                >
+                  Credit Ledger Due
+                </p>
+                <h3
+                  class="text-3xl font-black text-amber-600 dark:text-amber-400 mt-1"
+                  id="total-due"
+                >
+                  ₹0
+                </h3>
+              </div>
+              <span
+                class="w-10 h-10 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/40 rounded-xl flex items-center justify-center text-amber-600 dark:text-amber-400 text-lg"
+              >
+                <i class="fa-solid fa-clock-rotate-left"></i>
+              </span>
+            </div>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-2">
+              Pending employee balance
+            </p>
+          </div>
+        </div>
+
+        <!-- Bagging Manifest Summary -->
+        <div
+          class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm"
+        >
+          <div
+            class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50"
+          >
+            <div>
+              <h2
+                class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2"
+              >
+                <i
+                  class="fa-solid fa-layer-group text-emerald-600 dark:text-emerald-400"
+                ></i>
+                Drop Point & Staff Room Bagging Manifest
+              </h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                Insulated bag distribution list by location
+              </p>
+            </div>
+            <button
+              onclick="printManifest()"
+              class="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+            >
+              <i class="fa-solid fa-print"></i> Print Slips
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table
+              class="w-full text-left text-xs text-slate-700 dark:text-slate-300"
+            >
+              <thead
+                class="bg-slate-100 dark:bg-slate-950 text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-800"
+              >
+                <tr>
+                  <th class="py-3 px-4">Drop Location / Staff Room</th>
+                  <th class="py-3 px-4 text-center">Veg Packets</th>
+                  <th class="py-3 px-4 text-center">Non-Veg Packets</th>
+                  <th class="py-3 px-4 text-center">Total In Bag</th>
+                  <th class="py-3 px-4 text-right">Status</th>
+                </tr>
+              </thead>
+              <tbody
+                id="dispatch-table-body"
+                class="divide-y divide-slate-200 dark:divide-slate-800/60 font-medium"
+              >
+                <tr>
+                  <td colspan="5" class="p-4 text-center text-slate-500">
+                    Loading dispatch summaries...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Live Orders Stream Table -->
+        <div
+          class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm"
+        >
+          <div
+            class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-wrap justify-between items-center gap-3 bg-slate-50 dark:bg-slate-900/50"
+          >
+            <div>
+              <h2
+                class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2"
+              >
+                <i
+                  class="fa-solid fa-receipt text-blue-600 dark:text-blue-400"
+                ></i>
+                Live Order Streams & Settlements
+              </h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                Real-time individual employee orders
+              </p>
+            </div>
+            <input
+              type="text"
+              id="order-search-input"
+              onkeyup="filterOrdersTable()"
+              placeholder="Search staff name or phone..."
+              class="bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs px-3 py-1.5 rounded-xl text-slate-900 dark:text-white focus:outline-emerald-500 w-56"
+            />
+          </div>
+          <div class="overflow-x-auto">
+            <table
+              class="w-full text-left text-xs text-slate-700 dark:text-slate-300"
+            >
+              <thead
+                class="bg-slate-100 dark:bg-slate-950 text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-800"
+              >
+                <tr>
+                  <th class="py-3 px-4">Staff Member</th>
+                  <th class="py-3 px-4">Item & Drop Point</th>
+                  <th class="py-3 px-4 text-center">Qty</th>
+                  <th class="py-3 px-4 text-right">Amount</th>
+                  <th class="py-3 px-4 text-right">Action / Settle</th>
+                </tr>
+              </thead>
+              <tbody
+                id="orders-table-body"
+                class="divide-y divide-slate-200 dark:divide-slate-800/60 font-medium"
+              >
+                <tr>
+                  <td colspan="5" class="p-4 text-center text-slate-500">
+                    Loading live orders...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: MENU & KITCHEN TOGGLES -->
+      <div id="tab-view-menu" class="hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Snack Form -->
+          <div
+            class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 shadow-sm"
+          >
+            <div
+              class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3"
+            >
+              <h3
+                class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2"
+                id="menu-form-title"
+              >
+                <i
+                  class="fa-solid fa-plus text-purple-600 dark:text-purple-400"
+                ></i>
+                Add Snack to Catalog
+              </h3>
+              <button
+                id="cancel-menu-edit-btn"
+                onclick="resetMenuForm()"
+                class="hidden text-xs text-rose-500 font-bold hover:underline"
+              >
+                Cancel
+              </button>
+            </div>
+
+            <input type="hidden" id="edit-menu-id" value="" />
+
+            <div class="space-y-3">
+              <div>
+                <label
+                  class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase"
+                  >Target Campus</label
+                >
+                <select
+                  id="menu-target-building"
+                  class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-purple-500 mt-1"
+                >
+                  <option value="">🌐 All Campuses (Default Catalog)</option>
+                </select>
+              </div>
+
+              <div>
+                <label
+                  class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase"
+                  >Category</label
+                >
+                <select
+                  id="menu-category"
+                  class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-purple-500 mt-1"
+                >
+                  <option value="veg">🟢 Pure Veg</option>
+                  <option value="nonveg">🔴 Non-Veg</option>
+                </select>
+              </div>
+
+              <div>
+                <label
+                  class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase"
+                  >Snack Item Name</label
+                >
+                <input
+                  type="text"
+                  id="menu-name"
+                  placeholder="e.g. Crispy Onion Samosa"
+                  class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-purple-500 mt-1"
+                />
+              </div>
+
+              <div>
+                <label
+                  class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase"
+                  >Variant Badge</label
+                >
+                <input
+                  type="text"
+                  id="menu-badge"
+                  value="Pack of 2 Pcs"
+                  class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-purple-500 mt-1"
+                />
+              </div>
+
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label
+                    class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase"
+                    >MRP (₹)</label
+                  >
+                  <input
+                    type="number"
+                    id="menu-base-price"
+                    placeholder="50"
+                    oninput="calculateFinalPrice()"
+                    class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-purple-500 mt-1"
+                  />
+                </div>
+                <div>
+                  <label
+                    class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase"
+                    >Discount %</label
+                  >
+                  <input
+                    type="number"
+                    id="menu-discount"
+                    value="40"
+                    oninput="calculateFinalPrice()"
+                    class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-purple-500 mt-1"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label
+                  class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase"
+                  >Image URL</label
+                >
+                <input
+                  type="text"
+                  id="menu-image"
+                  value="https://images.unsplash.com/photo-1601050690597-df0568f70950?w=500&auto=format&fit=crop&q=80"
+                  class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-purple-500 mt-1"
+                />
+              </div>
+
+              <div
+                class="bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-3 rounded-xl flex justify-between items-center"
+              >
+                <span
+                  class="text-xs font-bold text-slate-500 dark:text-slate-400"
+                  >Offer Price:</span
+                >
+                <span
+                  class="text-lg font-black text-emerald-600 dark:text-emerald-400"
+                  id="preview-final-price"
+                  >₹30</span
+                >
+              </div>
+
+              <button
+                id="save-menu-btn"
+                onclick="saveMenuItemHandler()"
+                class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 rounded-xl text-xs transition active:scale-95 shadow-lg shadow-purple-600/20"
+              >
+                Save Item to Catalog
+              </button>
+            </div>
+          </div>
+
+          <!-- Live Kitchen Toggles Table -->
+          <div
+            class="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm flex flex-col"
+          >
+            <div
+              class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50"
+            >
+              <h3
+                class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2"
+              >
+                <i class="fa-solid fa-toggle-on text-emerald-500"></i> Daily
+                Live Kitchen Toggles
+              </h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                Toggle active snacks based on today's raw materials
+              </p>
+            </div>
+            <div class="overflow-x-auto flex-1">
+              <table
+                class="w-full text-left text-xs text-slate-700 dark:text-slate-300"
+              >
+                <thead
+                  class="bg-slate-100 dark:bg-slate-950 text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-800"
+                >
+                  <tr>
+                    <th class="py-3 px-4 text-center">Today's Batch</th>
+                    <th class="py-3 px-4">Item & Variant</th>
+                    <th class="py-3 px-4">Campus</th>
+                    <th class="py-3 px-4 text-center">Offer Price</th>
+                    <th class="py-3 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody
+                  id="menu-list-body"
+                  class="divide-y divide-slate-200 dark:divide-slate-800/60 font-medium"
+                >
+                  <tr>
+                    <td colspan="5" class="p-4 text-center text-slate-500">
+                      Loading catalog items...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: CAMPUSES & QR STANDEES -->
+      <div id="tab-view-buildings" class="hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Location Form -->
+          <div
+            class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 shadow-sm"
+          >
+            <div
+              class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3"
+            >
+              <h3
+                class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2"
+                id="building-form-title"
+              >
+                <i class="fa-solid fa-plus text-amber-500"></i> Register
+                Location
+              </h3>
+              <button
+                id="cancel-edit-btn"
+                onclick="resetBuildingForm()"
+                class="hidden text-xs text-rose-500 font-bold hover:underline"
+              >
+                Cancel
+              </button>
+            </div>
+
+            <input type="hidden" id="edit-building-id" value="" />
+
+            <div class="space-y-3">
+              <div>
+                <label
+                  class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase"
+                  >Campus / School Name</label
+                >
+                <input
+                  type="text"
+                  id="new-campus-name"
+                  placeholder="e.g. St. Xavier School"
+                  class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-amber-500 mt-1"
+                />
+              </div>
+              <div>
+                <label
+                  class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase"
+                  >QR Slug (Short URL ID)</label
+                >
+                <input
+                  type="text"
+                  id="new-qr-slug"
+                  placeholder="e.g. st-xavier"
+                  class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-amber-500 mt-1"
+                />
+              </div>
+              <div>
+                <label
+                  class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase"
+                  >Cut-Off Time</label
+                >
+                <input
+                  type="text"
+                  id="new-cutoff"
+                  value="12:00 PM - 12:30 PM"
+                  class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-amber-500 mt-1"
+                />
+              </div>
+              <div>
+                <label
+                  class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase"
+                  >Delivery Slot</label
+                >
+                <input
+                  type="text"
+                  id="new-delivery"
+                  value="03:30 PM - 04:00 PM"
+                  class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-amber-500 mt-1"
+                />
+              </div>
+
+              <button
+                id="save-building-btn"
+                onclick="saveBuildingHandler()"
+                class="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black py-2.5 rounded-xl text-xs transition active:scale-95 shadow-lg shadow-amber-500/20"
+              >
+                Save Campus & Generate QR
+              </button>
+            </div>
+          </div>
+
+          <!-- Campus Directory -->
+          <div
+            class="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm flex flex-col"
+          >
+            <div
+              class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50"
+            >
+              <h3
+                class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2"
+              >
+                <i class="fa-solid fa-qrcode text-amber-500"></i> Active Campus
+                Standees
+              </h3>
+            </div>
+            <div class="overflow-x-auto flex-1">
+              <table
+                class="w-full text-left text-xs text-slate-700 dark:text-slate-300"
+              >
+                <thead
+                  class="bg-slate-100 dark:bg-slate-950 text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-800"
+                >
+                  <tr>
+                    <th class="py-3 px-4">Campus Name</th>
+                    <th class="py-3 px-4">QR Slug</th>
+                    <th class="py-3 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody
+                  id="buildings-list-body"
+                  class="divide-y divide-slate-200 dark:divide-slate-800/60 font-medium"
+                >
+                  <tr>
+                    <td colspan="3" class="p-4 text-center text-slate-500">
+                      Loading campuses...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: CUSTOMERS & CAMPAIGNS (CREDIT LIMIT CONTROLLER) -->
+      <div id="tab-view-customers" class="hidden space-y-6">
+        <!-- Campaign Launcher Box -->
+        <div
+          class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 shadow-sm"
+        >
+          <div class="border-b border-slate-200 dark:border-slate-800 pb-3">
+            <h3
+              class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2"
+            >
+              <i class="fa-brands fa-whatsapp text-green-500"></i> WhatsApp
+              Campaign Broadcaster
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              Send 11:30 AM cut-off alerts & balance updates
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label
+                class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase"
+                >Campaign Preset</label
+              >
+              <select
+                id="campaign-template-select"
+                onchange="updateCampaignTemplate()"
+                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-indigo-500 mt-1"
+              >
+                <option value="daily_reminder">
+                  🔥 Daily Snack Cut-Off Alert (11:30 AM)
+                </option>
+                <option value="special_discount">🎉 Friday Combo Treat</option>
+                <option value="birthday_treat">
+                  🎂 Birthday & Bulk Office Treat
+                </option>
+                <option value="balance_due">
+                  🧾 Outstanding Credit Bill Reminder
+                </option>
+              </select>
+            </div>
+            <div>
+              <label
+                class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase"
+                >Message Text</label
+              >
+              <input
+                type="text"
+                id="campaign-message-text"
+                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-indigo-500 mt-1"
+              />
+            </div>
+          </div>
+
+          <div class="flex gap-2">
+            <button
+              onclick="copyBroadcastNumbers()"
+              class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-bold px-4 py-2 rounded-xl text-xs transition active:scale-95"
+            >
+              <i class="fa-solid fa-copy"></i> Copy Broadcast List
+            </button>
+          </div>
+        </div>
+
+        <!-- Customer Directory with In-Table Credit Limit Editor -->
+        <div
+          class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm"
+        >
+          <div
+            class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50"
+          >
+            <h3
+              class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2"
+            >
+              <i class="fa-solid fa-address-book text-indigo-500"></i>
+              Registered Customer Directory & Credit Limits
+            </h3>
+            <span
+              class="text-xs font-bold text-slate-500 dark:text-slate-400"
+              id="customer-total-count"
+              >0 Profiles</span
+            >
+          </div>
+          <div class="overflow-x-auto">
+            <table
+              class="w-full text-left text-xs text-slate-700 dark:text-slate-300"
+            >
+              <thead
+                class="bg-slate-100 dark:bg-slate-950 text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-800"
+              >
+                <tr>
+                  <th class="py-3 px-4">Customer Name & Phone</th>
+                  <th class="py-3 px-4">Saved Location</th>
+                  <th class="py-3 px-4 text-center">Orders</th>
+                  <th class="py-3 px-4 text-center">Credit Limit (₹)</th>
+                  <th class="py-3 px-4 text-right">Total Spent</th>
+                  <th class="py-3 px-4 text-right">WhatsApp Action</th>
+                </tr>
+              </thead>
+              <tbody
+                id="campaign-customer-table"
+                class="divide-y divide-slate-200 dark:divide-slate-800/60 font-medium"
+              >
+                <tr>
+                  <td colspan="6" class="p-4 text-center text-slate-500">
+                    Loading customer profiles...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Printable Canvas -->
+    <div
+      id="printable-section"
+      class="hidden text-black p-6 bg-white space-y-6"
+    ></div>
+
+    <!-- Application Script Engine -->
+    <script>
+      const SUPABASE_URL = "https://droxpyfhknkswaabsabk.supabase.co";
+      const SUPABASE_ANON_KEY =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyb3hweWZoa25rc3dhYWJzYWJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwNjgzNDIsImV4cCI6MjEwMzY0NDM0Mn0.bSawsQ0t6Cls4QjpTxhk6Mp80GFlFUg1lTqLk87fxuM"; // Paste your public anon key here
+      const supabaseClient = supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY,
+      );
+
+      let currentOrdersData = [];
+      let dispatchGrouping = {};
+      let activeBuildings = [];
+      let activeMenuItems = [];
+      let allCustomers = [];
+
+      let countdownSec = 15;
+      let refreshIntervalTimer = null;
+
+      const campaignTemplates = {
+        daily_reminder:
+          "🔥 *Tastea Daily Snack Pass*\n\nToday's hot snack is live! Order before 12:30 PM for 3:30 PM delivery.\n\n👉 *Tap to Order:* https://tastea.in/foodpass",
+        special_discount:
+          "🎉 *Friday Crunch Special!*\n\nGet an extra discount on today's combo snack box for your team.\n\n👉 *Order Here:* https://tastea.in/foodpass",
+        birthday_treat:
+          "🎂 *Office Birthday Treat?*\n\nGet customized snack boxes with name stickers for 20+ packs at bulk pricing. Reply here!",
+        balance_due:
+          "🧾 *Tastea Snack Ledger Reminder*\n\nHi! You have a pending credit due on your office snack account. Kindly clear via UPI when convenient. Thank you!",
+      };
+
+      window.onload = async function () {
+        initTheme();
+        await fetchDashboardData();
+        await fetchMenuItems();
+        updateCampaignTemplate();
+        startAutoRefreshLoop();
+      };
+
+      function initTheme() {
+        const savedTheme = localStorage.getItem("tastea_theme") || "dark";
+        if (savedTheme === "dark") {
+          document.documentElement.classList.add("dark");
+          document.getElementById("theme-icon").className =
+            "fa-solid fa-sun text-amber-400";
+        } else {
+          document.documentElement.classList.remove("dark");
+          document.getElementById("theme-icon").className =
+            "fa-solid fa-moon text-slate-700";
+        }
+      }
+
+      function toggleTheme() {
+        const isDark = document.documentElement.classList.contains("dark");
+        if (isDark) {
+          document.documentElement.classList.remove("dark");
+          localStorage.setItem("tastea_theme", "light");
+          document.getElementById("theme-icon").className =
+            "fa-solid fa-moon text-slate-700";
+        } else {
+          document.documentElement.classList.add("dark");
+          localStorage.setItem("tastea_theme", "dark");
+          document.getElementById("theme-icon").className =
+            "fa-solid fa-sun text-amber-400";
+        }
+      }
+
+      function startAutoRefreshLoop() {
+        if (refreshIntervalTimer) clearInterval(refreshIntervalTimer);
+        countdownSec = 15;
+        document.getElementById("sync-timer").innerText = `${countdownSec}s`;
+
+        refreshIntervalTimer = setInterval(async () => {
+          countdownSec--;
+          if (countdownSec <= 0) {
+            countdownSec = 15;
+            await fetchDashboardData();
+          }
+          document.getElementById("sync-timer").innerText = `${countdownSec}s`;
+        }, 1000);
+      }
+
+      async function manualSync() {
+        countdownSec = 15;
+        document.getElementById("sync-timer").innerText = `${countdownSec}s`;
+        await fetchDashboardData();
+        await fetchMenuItems();
+      }
+
+      function switchTab(tabId) {
+        ["ops", "menu", "buildings", "customers"].forEach((t) => {
+          document.getElementById(`tab-view-${t}`).classList.add("hidden");
+          document.getElementById(`tab-btn-${t}`).classList.remove("active");
+        });
+
+        document.getElementById(`tab-view-${tabId}`).classList.remove("hidden");
+        document.getElementById(`tab-btn-${tabId}`).classList.add("active");
+
+        if (tabId === "customers") fetchCustomersList();
+      }
+
+      async function fetchDashboardData() {
+        const { data: buildings } = await supabaseClient
+          .from("buildings")
+          .select("*")
+          .order("campus_name");
+        activeBuildings = buildings || [];
+        renderBuildingsList();
+        populateCampusDropdown();
+
+        const { data: orders, error } = await supabaseClient
+          .from("food_orders")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          console.error("Orders fetch error:", error);
+          return;
+        }
+
+        currentOrdersData = orders || [];
+        let totalVeg = 0;
+        let totalNonVeg = 0;
+        let totalReceived = 0;
+        let totalDue = 0;
+
+        dispatchGrouping = {};
+
+        const ordersTableBody = document.getElementById("orders-table-body");
+        ordersTableBody.innerHTML = "";
+
+        if (!orders || orders.length === 0) {
+          ordersTableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No orders placed today.</td></tr>`;
+        } else {
+          orders.forEach((order) => {
+            const amount = Number(order.total_price || 0);
+            const qty = Number(order.quantity || 1);
+            const isVeg = order.item_name.toLowerCase().includes("veg");
+
+            if (order.payment_status === "paid") totalReceived += amount;
+            else totalDue += amount;
+
+            if (isVeg) totalVeg += qty;
+            else totalNonVeg += qty;
+
+            const block = order.customer_block || "Main Wing";
+            const floor = order.customer_floor || "General";
+            const locKey = `${block} • ${floor}`;
+
+            if (!dispatchGrouping[locKey]) {
+              dispatchGrouping[locKey] = {
+                locKey,
+                block,
+                floor,
+                veg: 0,
+                nonveg: 0,
+                total: 0,
+                customers: [],
+              };
+            }
+
+            if (isVeg) dispatchGrouping[locKey].veg += qty;
+            else dispatchGrouping[locKey].nonveg += qty;
+            dispatchGrouping[locKey].total += qty;
+
+            dispatchGrouping[locKey].customers.push({
+              name: order.user_name || "Staff",
+              phone: order.user_phone,
+              item: order.item_name,
+              qty: qty,
+              price: amount,
+              paid: order.payment_status === "paid",
+            });
+
+            const isPaid = order.payment_status === "paid";
+            const actionBtn = isPaid
+              ? `<span class="bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-700/50 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase"><i class="fa-solid fa-check"></i> Paid</span>`
+              : `<button onclick="markAsPaid('${order.id}')" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-900 px-3 py-1 rounded-lg text-[10px] font-black shadow transition">Mark Paid</button>`;
+
+            ordersTableBody.innerHTML += `
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition border-b border-slate-200 dark:border-slate-800/40">
+                            <td class="py-3 px-4">
+                                <span class="font-bold text-slate-900 dark:text-white">${order.user_name || "Staff"}</span><br>
+                                <span class="text-[11px] text-slate-500 dark:text-slate-400 font-mono">${order.user_phone}</span>
+                            </td>
+                            <td class="py-3 px-4">
+                                <span class="text-slate-800 dark:text-slate-200">${order.item_name}</span><br>
+                                <span class="text-[10px] text-amber-700 dark:text-amber-300 font-bold bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800/40">📍 ${locKey}</span>
+                            </td>
+                            <td class="py-3 px-4 text-center font-bold text-amber-600 dark:text-amber-400">${order.quantity}</td>
+                            <td class="py-3 px-4 text-right font-black text-slate-900 dark:text-white">₹${order.total_price}</td>
+                            <td class="py-3 px-4 text-right">${actionBtn}</td>
+                        </tr>
+                    `;
+          });
+        }
+
+        const dispatchTableBody = document.getElementById(
+          "dispatch-table-body",
+        );
+        dispatchTableBody.innerHTML = "";
+
+        if (Object.keys(dispatchGrouping).length === 0) {
+          dispatchTableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No delivery bags required yet.</td></tr>`;
+        } else {
+          Object.values(dispatchGrouping).forEach((group) => {
+            dispatchTableBody.innerHTML += `
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition border-b border-slate-200 dark:border-slate-800/40">
+                            <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">🏢 ${group.locKey}</td>
+                            <td class="py-3 px-4 text-center font-bold text-emerald-600 dark:text-emerald-400">${group.veg}</td>
+                            <td class="py-3 px-4 text-center font-bold text-rose-600 dark:text-rose-400">${group.nonveg}</td>
+                            <td class="py-3 px-4 text-center font-black text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-950/60">${group.total} Boxes</td>
+                            <td class="py-3 px-4 text-right">
+                                <span class="bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-700/50 px-2 py-0.5 rounded text-[10px] font-bold">Ready</span>
+                            </td>
+                        </tr>
+                    `;
+          });
+        }
+
+        document.getElementById("total-veg-qty").innerText = totalVeg;
+        document.getElementById("total-nonveg-qty").innerText = totalNonVeg;
+        document.getElementById("total-received").innerText =
+          `₹${totalReceived}`;
+        document.getElementById("total-due").innerText = `₹${totalDue}`;
+      }
+
+      async function markAsPaid(orderId) {
+        const { error } = await supabaseClient
+          .from("food_orders")
+          .update({ payment_status: "paid" })
+          .eq("id", orderId);
+        if (!error) fetchDashboardData();
+      }
+
+      function filterOrdersTable() {
+        const val = document
+          .getElementById("order-search-input")
+          .value.toLowerCase();
+        const rows = document.querySelectorAll("#orders-table-body tr");
+        rows.forEach((r) => {
+          r.style.display = r.innerText.toLowerCase().includes(val)
+            ? ""
+            : "none";
+        });
+      }
+
+      async function fetchMenuItems() {
+        const { data: items } = await supabaseClient
+          .from("menu_items")
+          .select("*")
+          .order("created_at", { ascending: false });
+        activeMenuItems = items || [];
+        renderMenuList();
+      }
+
+      function populateCampusDropdown() {
+        const sel = document.getElementById("menu-target-building");
+        sel.innerHTML = `<option value="">🌐 All Campuses (Default Catalog)</option>`;
+        activeBuildings.forEach((b) => {
+          sel.innerHTML += `<option value="${b.id}">🏢 ${b.campus_name}</option>`;
+        });
+      }
+
+      function calculateFinalPrice() {
+        const base = Number(
+          document.getElementById("menu-base-price").value || 0,
+        );
+        const disc = Number(
+          document.getElementById("menu-discount").value || 0,
+        );
+        const final = Math.round(base - (base * disc) / 100);
+        document.getElementById("preview-final-price").innerText = `₹${final}`;
+      }
+
+      function renderMenuList() {
+        const tbody = document.getElementById("menu-list-body");
+        tbody.innerHTML = "";
+
+        if (activeMenuItems.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No snacks in catalog. Add items on the left.</td></tr>`;
+          return;
+        }
+
+        activeMenuItems.forEach((item) => {
+          const isVeg = item.category_type === "veg";
+          const catBadge = isVeg
+            ? `<span class="text-emerald-600 dark:text-emerald-400 font-bold">🟢 Veg</span>`
+            : `<span class="text-rose-600 dark:text-rose-400 font-bold">🔴 Non-Veg</span>`;
+          const campusName = item.building_id
+            ? activeBuildings.find((b) => b.id === item.building_id)
+                ?.campus_name || "Custom"
+            : "🌐 All";
+
+          const isActive = item.is_active_today;
+          const toggleBtn = isActive
+            ? `<button onclick="toggleActiveStatus('${item.id}', false, '${item.category_type}', '${item.building_id || ""}')" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-3 py-1.5 rounded-full text-[10px] shadow active:scale-95 flex items-center gap-1 mx-auto"><i class="fa-solid fa-check"></i> Active Today</button>`
+            : `<button onclick="toggleActiveStatus('${item.id}', true, '${item.category_type}', '${item.building_id || ""}')" class="bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-emerald-500 font-bold px-3 py-1.5 rounded-full text-[10px] border border-slate-300 dark:border-slate-700 hover:border-emerald-500 transition active:scale-95 mx-auto">Set Active</button>`;
+
+          tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition border-b border-slate-200 dark:border-slate-800/40 ${isActive ? "bg-emerald-500/5" : ""}">
+                        <td class="py-3 px-4 text-center">${toggleBtn}</td>
+                        <td class="py-3 px-4">${catBadge} • <span class="font-bold text-slate-900 dark:text-white">${item.item_name}</span> <span class="text-[10px] text-slate-500 dark:text-slate-400">(${item.portion_badge})</span></td>
+                        <td class="py-3 px-4 text-slate-500 dark:text-slate-400">${campusName}</td>
+                        <td class="py-3 px-4 text-center font-black text-slate-900 dark:text-white">₹${item.final_price || Math.round(item.base_price - (item.base_price * item.discount_pct) / 100)}</td>
+                        <td class="py-3 px-4 text-right space-x-1 whitespace-nowrap">
+                            <button onclick="startEditMenuItem('${item.id}')" class="bg-purple-100 hover:bg-purple-200 dark:bg-purple-950/80 dark:hover:bg-purple-900 border border-purple-300 dark:border-purple-700/60 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-lg text-[10px] font-bold">Edit</button>
+                            <button onclick="deleteMenuItem('${item.id}', '${item.item_name.replace(/'/g, "\\'")}')" class="bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/80 dark:hover:bg-rose-900 border border-rose-300 dark:border-rose-700/60 text-rose-700 dark:text-rose-300 px-2 py-1 rounded-lg text-[10px] font-bold">Delete</button>
+                        </td>
+                    </tr>
+                `;
+        });
+      }
+
+      async function toggleActiveStatus(
+        itemId,
+        newStatus,
+        categoryType,
+        buildingId,
+      ) {
+        if (newStatus === true) {
+          let deactivationQuery = supabaseClient
+            .from("menu_items")
+            .update({ is_active_today: false })
+            .eq("category_type", categoryType);
+
+          if (buildingId) {
+            deactivationQuery = deactivationQuery.eq("building_id", buildingId);
+          } else {
+            deactivationQuery = deactivationQuery.is("building_id", null);
+          }
+
+          await deactivationQuery;
+        }
+
+        const { error } = await supabaseClient
+          .from("menu_items")
+          .update({ is_active_today: newStatus })
+          .eq("id", itemId);
+
+        if (error) {
+          alert("Failed to update status: " + error.message);
+          return;
+        }
+
+        await fetchMenuItems();
+      }
+
+      function startEditMenuItem(itemId) {
+        const item = activeMenuItems.find((i) => i.id === itemId);
+        if (!item) return;
+
+        document.getElementById("edit-menu-id").value = item.id;
+        document.getElementById("menu-target-building").value =
+          item.building_id || "";
+        document.getElementById("menu-category").value = item.category_type;
+        document.getElementById("menu-name").value = item.item_name;
+        document.getElementById("menu-badge").value =
+          item.portion_badge || "Pack of 2 Pcs";
+        document.getElementById("menu-base-price").value = item.base_price;
+        document.getElementById("menu-discount").value = item.discount_pct;
+        document.getElementById("menu-image").value = item.image_url || "";
+
+        calculateFinalPrice();
+        document.getElementById("menu-form-title").innerText =
+          `✏️ Edit: ${item.item_name}`;
+        document.getElementById("save-menu-btn").innerText =
+          "Update Snack Item";
+        document
+          .getElementById("cancel-menu-edit-btn")
+          .classList.remove("hidden");
+      }
+
+      function resetMenuForm() {
+        document.getElementById("edit-menu-id").value = "";
+        document.getElementById("menu-name").value = "";
+        document.getElementById("menu-base-price").value = "";
+        document.getElementById("menu-discount").value = "40";
+        document.getElementById("preview-final-price").innerText = "₹0";
+        document.getElementById("menu-form-title").innerText =
+          "+ Add Snack to Catalog";
+        document.getElementById("save-menu-btn").innerText =
+          "Save Item to Catalog";
+        document.getElementById("cancel-menu-edit-btn").classList.add("hidden");
+      }
+
+      async function saveMenuItemHandler() {
+        const editId = document.getElementById("edit-menu-id").value;
+        const targetBuilding =
+          document.getElementById("menu-target-building").value || null;
+        const category = document.getElementById("menu-category").value;
+        const name = document.getElementById("menu-name").value.trim();
+        const badge = document.getElementById("menu-badge").value.trim();
+        const basePrice = parseFloat(
+          document.getElementById("menu-base-price").value,
+        );
+        const discount = parseInt(
+          document.getElementById("menu-discount").value || 0,
+        );
+        const image = document.getElementById("menu-image").value.trim();
+
+        if (!name || isNaN(basePrice)) {
+          alert("Enter Item Name and Base Price.");
+          return;
+        }
+
+        const payload = {
+          building_id: targetBuilding,
+          category_type: category,
+          item_name: name,
+          portion_badge: badge,
+          base_price: basePrice,
+          discount_pct: discount,
+          image_url: image,
+        };
+
+        const res = editId
+          ? await supabaseClient
+              .from("menu_items")
+              .update(payload)
+              .eq("id", editId)
+          : await supabaseClient.from("menu_items").insert([payload]);
+
+        if (res.error) {
+          alert("Error: " + res.error.message);
+          return;
+        }
+
+        resetMenuForm();
+        await fetchMenuItems();
+      }
+
+      async function deleteMenuItem(itemId, itemName) {
+        if (!confirm(`Delete "${itemName}" from catalog?`)) return;
+        await supabaseClient.from("menu_items").delete().eq("id", itemId);
+        await fetchMenuItems();
+      }
+
+      function renderBuildingsList() {
+        const tbody = document.getElementById("buildings-list-body");
+        tbody.innerHTML = "";
+
+        if (activeBuildings.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-slate-500">No campuses registered.</td></tr>`;
+          return;
+        }
+
+        activeBuildings.forEach((b) => {
+          const safeName = b.campus_name.replace(/'/g, "\\'");
+          tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition border-b border-slate-200 dark:border-slate-800/40">
+                        <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">${b.campus_name}</td>
+                        <td class="py-3 px-4 text-amber-600 dark:text-amber-300 font-mono">${b.qr_code_slug}</td>
+                        <td class="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
+                            <button onclick="printStandee('${safeName}', '${b.qr_code_slug}', '${b.cutoff_slot || ""}', '${b.delivery_slot || ""}')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white px-2 py-1 rounded-lg text-[10px] font-bold">Print QR</button>
+                            <button onclick="startEditBuilding('${b.id}')" class="bg-blue-100 hover:bg-blue-200 dark:bg-blue-950/80 dark:hover:bg-blue-900 border border-blue-300 dark:border-blue-700/60 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-lg text-[10px] font-bold">Edit</button>
+                            <button onclick="deleteBuilding('${b.id}', '${safeName}')" class="bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/80 dark:hover:bg-rose-900 border border-rose-300 dark:border-rose-700/60 text-rose-700 dark:text-rose-300 px-2 py-1 rounded-lg text-[10px] font-bold">Delete</button>
+                        </td>
+                    </tr>
+                `;
+        });
+      }
+
+      function startEditBuilding(buildingId) {
+        const b = activeBuildings.find((item) => item.id === buildingId);
+        if (!b) return;
+
+        document.getElementById("edit-building-id").value = b.id;
+        document.getElementById("new-campus-name").value = b.campus_name;
+        document.getElementById("new-qr-slug").value = b.qr_code_slug;
+        document.getElementById("new-cutoff").value =
+          b.cutoff_slot || "12:00 PM - 12:30 PM";
+        document.getElementById("new-delivery").value =
+          b.delivery_slot || "03:30 PM - 04:00 PM";
+
+        document.getElementById("building-form-title").innerText =
+          `✏️ Edit: ${b.campus_name}`;
+        document.getElementById("save-building-btn").innerText =
+          "Update Campus Details";
+        document.getElementById("cancel-edit-btn").classList.remove("hidden");
+      }
+
+      function resetBuildingForm() {
+        document.getElementById("edit-building-id").value = "";
+        document.getElementById("new-campus-name").value = "";
+        document.getElementById("new-qr-slug").value = "";
+        document.getElementById("building-form-title").innerText =
+          "+ Register Location";
+        document.getElementById("save-building-btn").innerText =
+          "Save Campus & Generate QR";
+        document.getElementById("cancel-edit-btn").classList.add("hidden");
+      }
+
+      async function saveBuildingHandler() {
+        const editId = document.getElementById("edit-building-id").value;
+        const name = document.getElementById("new-campus-name").value.trim();
+        const slug = document
+          .getElementById("new-qr-slug")
+          .value.trim()
+          .toLowerCase()
+          .replace(/\s+/g, "-");
+        const cutoff = document.getElementById("new-cutoff").value.trim();
+        const delivery = document.getElementById("new-delivery").value.trim();
+
+        if (!name || !slug) {
+          alert("Enter Campus Name and QR Slug.");
+          return;
+        }
+
+        const payload = {
+          campus_name: name,
+          qr_code_slug: slug,
+          cutoff_slot: cutoff,
+          delivery_slot: delivery,
+        };
+        const res = editId
+          ? await supabaseClient
+              .from("buildings")
+              .update(payload)
+              .eq("id", editId)
+          : await supabaseClient.from("buildings").insert([payload]);
+
+        if (res.error) {
+          alert("Error: " + res.error.message);
+          return;
+        }
+
+        resetBuildingForm();
+        await fetchDashboardData();
+      }
+
+      async function deleteBuilding(buildingId, campusName) {
+        if (!confirm(`Delete "${campusName}"?`)) return;
+        await supabaseClient.from("buildings").delete().eq("id", buildingId);
+        await fetchDashboardData();
+      }
+
+      function printStandee(name, slug, cutoff, delivery) {
+        const container = document.getElementById("printable-section");
+        container.innerHTML = `
+                <div class="flex flex-col items-center justify-center min-h-screen text-center p-8">
+                    <div class="w-[360px] border-4 border-emerald-700 rounded-3xl p-6 space-y-4 shadow-xl">
+                        <div class="bg-emerald-700 text-white py-1.5 px-4 rounded-full font-black text-sm tracking-wider uppercase inline-block">TASTEA FOOD PASS</div>
+                        <h2 class="text-xl font-black text-slate-900">${name}</h2>
+                        <div id="standee-qr-target" class="flex justify-center p-2 bg-slate-50 rounded-2xl border-2 border-dashed border-emerald-600"></div>
+                        <p class="text-xs font-black text-slate-800">📸 SCAN TO ORDER TODAY'S FRESH SNACKS</p>
+                        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 text-xs text-emerald-950 font-semibold space-y-0.5">
+                            <p>⏱️ Cut-Off: ${cutoff}</p>
+                            <p>🚚 Delivery: ${delivery}</p>
+                        </div>
+                        <p class="text-[10px] text-slate-400 uppercase font-bold">Insulated Desk & Staff Room Delivery</p>
+                    </div>
+                </div>
+            `;
+
+        const origin =
+          window.location.origin +
+          window.location.pathname.replace("admin.html", "index.html");
+        const qr = new QRCodeStyling({
+          width: 200,
+          height: 200,
+          data: `${origin}?b=${slug}`,
+          dotsOptions: { color: "#047857", type: "rounded" },
+          cornersSquareOptions: { color: "#065f46", type: "extra-rounded" },
+        });
+
+        qr.append(document.getElementById("standee-qr-target"));
+        setTimeout(() => {
+          window.print();
+        }, 500);
+      }
+
+      function printManifest() {
+        const container = document.getElementById("printable-section");
+        container.innerHTML = `
+                <div class="text-center border-b pb-3 mb-4">
+                    <h1 class="text-2xl font-black tracking-wider">TASTEA FOOD PASS</h1>
+                    <p class="text-xs text-gray-600">Daily Kitchen Packing & Drop Manifest</p>
+                </div>
+            `;
+
+        Object.values(dispatchGrouping).forEach((group) => {
+          let customerListHTML = group.customers
+            .map(
+              (c, i) => `
+                    <tr class="border-b text-xs">
+                        <td class="py-1 font-bold">${i + 1}. ${c.name}</td>
+                        <td class="py-1">${c.item}</td>
+                        <td class="py-1 text-center font-bold">${c.qty}</td>
+                        <td class="py-1 text-right font-bold ${c.paid ? "text-green-700" : "text-red-600"}">${c.paid ? "PAID" : "DUE: ₹" + c.price}</td>
+                    </tr>
+                `,
+            )
+            .join("");
+
+          container.innerHTML += `
+                    <div class="border-2 border-dashed border-black p-4 rounded-xl space-y-3 break-inside-avoid mb-6">
+                        <div class="flex justify-between items-center border-b pb-2">
+                            <div>
+                                <h3 class="text-lg font-black uppercase">📦 BAG DROP: ${group.locKey}</h3>
+                                <p class="text-xs text-gray-600">Insulated Pack</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs font-bold bg-gray-200 px-2 py-1 rounded">Total: ${group.total} Boxes</span>
+                                <p class="text-[10px] text-gray-500 mt-1">Veg: ${group.veg} | Non-Veg: ${group.nonveg}</p>
+                            </div>
+                        </div>
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="text-[10px] uppercase border-b font-bold text-gray-500">
+                                    <th class="py-1">Staff Name</th>
+                                    <th class="py-1">Item</th>
+                                    <th class="py-1 text-center">Qty</th>
+                                    <th class="py-1 text-right">Payment</th>
+                                </tr>
+                            </thead>
+                            <tbody>${customerListHTML}</tbody>
+                        </table>
+                    </div>
+                `;
+        });
+
+        window.print();
+      }
+
+      function updateCampaignTemplate() {
+        const selected = document.getElementById(
+          "campaign-template-select",
+        ).value;
+        document.getElementById("campaign-message-text").value =
+          campaignTemplates[selected];
+      }
+
+      async function fetchCustomersList() {
+        const { data: customers } = await supabaseClient
+          .from("customers")
+          .select("*")
+          .order("last_ordered_at", { ascending: false });
+        allCustomers = customers || [];
+        document.getElementById("customer-total-count").innerText =
+          `${allCustomers.length} Profiles`;
+
+        const tbody = document.getElementById("campaign-customer-table");
+        tbody.innerHTML = "";
+
+        if (allCustomers.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">No customers registered yet.</td></tr>`;
+          return;
+        }
+
+        allCustomers.forEach((c) => {
+          const dropPoint = `${c.saved_block || "Main"} • ${c.saved_floor || "General"}`;
+          const msg = encodeURIComponent(
+            document.getElementById("campaign-message-text").value,
+          );
+          const limit = c.credit_limit || 500;
+
+          tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition border-b border-slate-200 dark:border-slate-800/40">
+                        <td class="py-3 px-4">
+                            <span class="font-bold text-slate-900 dark:text-white">${c.full_name}</span><br>
+                            <span class="text-slate-500 dark:text-slate-400 font-mono text-[11px]">${c.phone}</span>
+                        </td>
+                        <td class="py-3 px-4 text-amber-600 dark:text-amber-300 font-semibold">${dropPoint}</td>
+                        <td class="py-3 px-4 text-center font-bold text-slate-700 dark:text-slate-200">${c.total_orders_count || 1}</td>
+                        <td class="py-3 px-4 text-center">
+                            <input type="number" value="${limit}" onchange="updateCustomerLimit('${c.id}', this.value)" class="w-20 bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-center font-bold text-xs text-slate-900 dark:text-white focus:outline-emerald-500" title="Edit Employee Credit Limit">
+                        </td>
+                        <td class="py-3 px-4 text-right font-black text-emerald-600 dark:text-emerald-400">₹${c.total_spend_amount || 0}</td>
+                        <td class="py-3 px-4 text-right">
+                            <a href="https://wa.me/91${c.phone}?text=${msg}" target="_blank" class="bg-green-600 hover:bg-green-500 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold inline-flex items-center gap-1">
+                                <i class="fa-brands fa-whatsapp"></i> Chat
+                            </a>
+                        </td>
+                    </tr>
+                `;
+        });
+      }
+
+      async function updateCustomerLimit(customerId, newLimit) {
+        const { error } = await supabaseClient
+          .from("customers")
+          .update({ credit_limit: parseFloat(newLimit) })
+          .eq("id", customerId);
+
+        if (error) alert("Failed to update credit limit: " + error.message);
+        else alert("✅ Employee credit limit updated to ₹" + newLimit);
+      }
+
+      function copyBroadcastNumbers() {
+        if (allCustomers.length === 0) {
+          alert("No numbers available.");
+          return;
+        }
+        const numbers = allCustomers.map((c) => `+91${c.phone}`).join("\n");
+        navigator.clipboard.writeText(numbers);
+        alert(`✅ Copied ${allCustomers.length} numbers to clipboard!`);
+      }
+
+      function shareWhatsAppManifest() {
+        let msg = `*📦 TASTEA DAILY DISPATCH MANIFEST*\n\n`;
+        Object.values(dispatchGrouping).forEach((group) => {
+          msg += `📍 *${group.locKey}* (Total: ${group.total} Boxes)\n`;
+          msg += `• Veg: ${group.veg} | Non-Veg: ${group.nonveg}\n`;
+          group.customers.forEach((c) => {
+            msg += `  - ${c.name}: ${c.qty}x ${c.item} [${c.paid ? "PAID" : "DUE ₹" + c.price}]\n`;
+          });
+          msg += `\n`;
+        });
+        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+      }
+    </script>
+  </body>
+</html>

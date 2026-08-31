@@ -1,0 +1,1414 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tastea Food Pass — Fresh Desk Dispatch</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap");
+      body {
+        font-family: "Plus Jakarta Sans", sans-serif;
+      }
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-slate-100 text-slate-900 pb-28 antialiased selection:bg-emerald-500 selection:text-white select-none"
+  >
+    <!-- Top Floating Header -->
+    <header
+      class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm"
+    >
+      <div class="max-w-md mx-auto px-4 h-16 flex justify-between items-center">
+        <div class="flex items-center gap-2.5">
+          <div
+            class="w-10 h-10 bg-emerald-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-600/30"
+          >
+            <i class="fa-solid fa-mug-hot text-lg"></i>
+          </div>
+          <div>
+            <h1
+              class="text-base font-black tracking-tight flex items-center gap-1.5 leading-none text-slate-950"
+            >
+              TASTEA
+              <span
+                class="bg-emerald-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider"
+                >Pass</span
+              >
+            </h1>
+            <p
+              class="text-[11px] font-bold text-slate-500 mt-1 flex items-center gap-1"
+              id="header-building-name"
+            >
+              <i
+                class="fa-solid fa-location-dot text-emerald-600 text-[10px]"
+              ></i>
+              Loading Campus...
+            </p>
+          </div>
+        </div>
+
+        <!-- Single Clean User Profile Button -->
+        <div>
+          <button
+            onclick="openProfileModal()"
+            id="user-display"
+            class="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 transition active:scale-95 flex items-center gap-1.5"
+          >
+            <i class="fa-regular fa-user text-slate-500"></i> Login
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-md mx-auto p-4 space-y-4">
+      <!-- Available Spending Credit Banner (Tap to View Due / Pay via UPI) -->
+      <div
+        class="bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-white rounded-3xl p-4 shadow-xl shadow-emerald-950/20 border border-emerald-500/30 flex justify-between items-center"
+      >
+        <div class="space-y-0.5 cursor-pointer" onclick="openLedgerModal()">
+          <p
+            class="text-[10px] uppercase font-black tracking-wider text-emerald-400 flex items-center gap-1.5"
+          >
+            <span
+              class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"
+            ></span>
+            Available to Spend Today
+          </p>
+          <h3 class="text-2xl font-black text-white" id="hero-available-credit">
+            ₹500
+          </h3>
+          <p
+            class="text-[11px] text-slate-300 font-semibold"
+            id="hero-credit-limit-sub"
+          >
+            Approved Limit: ₹500 • Due:
+            <span class="text-amber-400 font-bold underline"
+              >₹0 (Tap to Pay)</span
+            >
+          </p>
+        </div>
+        <div class="text-right space-y-1.5">
+          <button
+            onclick="openHistoryModal()"
+            class="bg-white/15 hover:bg-white/25 text-white text-[11px] font-extrabold px-3 py-1.5 rounded-xl border border-white/20 transition active:scale-95 flex items-center gap-1.5 shadow"
+          >
+            <i class="fa-solid fa-clock-rotate-left text-amber-400"></i> History
+          </button>
+          <span
+            class="text-[10px] text-emerald-300 bg-emerald-900/60 px-2 py-0.5 rounded-full font-bold block"
+            >1-Tap Pay Later</span
+          >
+        </div>
+      </div>
+
+      <!-- Cut-off & Dispatch Status Pill -->
+      <div
+        class="bg-white rounded-2xl p-3 border border-slate-200 flex justify-between items-center text-xs shadow-sm"
+      >
+        <div class="flex items-center gap-2">
+          <span class="p-2 bg-amber-100 text-amber-800 rounded-xl font-bold"
+            ><i class="fa-regular fa-clock"></i
+          ></span>
+          <div>
+            <p class="font-extrabold text-slate-900" id="cutoff-display">
+              Cut-off: 12:30 PM
+            </p>
+            <p class="text-slate-500 text-[11px]" id="delivery-display">
+              🚚 Fresh Drop: 03:30 PM
+            </p>
+          </div>
+        </div>
+        <span
+          class="bg-emerald-100 text-emerald-800 font-black px-2.5 py-1 rounded-lg text-[10px] uppercase tracking-wider"
+          >Kitchen Live</span
+        >
+      </div>
+
+      <!-- Section Title with Rotation Badge -->
+      <div class="flex items-baseline justify-between pt-1 px-1">
+        <div>
+          <h2
+            class="text-lg font-black tracking-tight text-slate-950 flex items-center gap-1.5"
+          >
+            Today's Fresh Batch Drop
+          </h2>
+          <p class="text-xs text-slate-500 font-semibold">
+            Freshly fried 30 mins before dispatch
+          </p>
+        </div>
+        <span
+          class="text-[10px] font-black text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-1 rounded-full uppercase tracking-wider"
+        >
+          Daily Rotation
+        </span>
+      </div>
+
+      <!-- 1. VIBRANT 100% PURE VEG CARD -->
+      <div
+        class="bg-white rounded-3xl p-4 shadow-md border-2 border-emerald-500 hover:border-emerald-600 transition relative overflow-hidden space-y-3.5"
+      >
+        <div class="flex justify-between items-center">
+          <span
+            class="bg-emerald-600 text-white text-[10px] font-black px-3 py-1 rounded-lg uppercase tracking-wider flex items-center gap-1 shadow-sm"
+          >
+            <i class="fa-solid fa-leaf text-[9px]"></i> 100% Pure Veg
+          </span>
+          <span
+            class="text-[11px] font-black bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-md border border-emerald-300"
+            id="veg-badge"
+            >Save 40%</span
+          >
+        </div>
+
+        <div class="flex gap-3.5 items-center">
+          <div
+            class="relative w-24 h-24 shrink-0 rounded-2xl overflow-hidden shadow-inner cursor-pointer group"
+            onclick="
+              openGallery(currentDayMenu.veg.image, currentDayMenu.veg.name)
+            "
+          >
+            <img
+              id="veg-img"
+              src="https://images.unsplash.com/photo-1601050690597-df0568f70950?w=500&auto=format&fit=crop&q=80"
+              class="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+            />
+            <span
+              class="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded-md font-bold backdrop-blur-sm"
+            >
+              <i class="fa-solid fa-camera"></i> Photos
+            </span>
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <p
+              class="text-[11px] font-black text-emerald-700 uppercase"
+              id="veg-portion"
+            >
+              Pack of 2 Pcs
+            </p>
+            <h3
+              class="font-black text-slate-950 text-base leading-snug truncate"
+              id="veg-name"
+            >
+              Crispy Veg Samosa
+            </h3>
+            <p
+              class="text-xs font-bold text-amber-500 mt-0.5 flex items-center gap-1"
+            >
+              <i class="fa-solid fa-star text-[10px]"></i> 4.9
+              <span class="text-slate-400 font-normal text-[11px]"
+                >(Fresh)</span
+              >
+            </p>
+
+            <div class="flex items-baseline gap-2 mt-1">
+              <span class="text-2xl font-black text-emerald-600" id="veg-price"
+                >₹30</span
+              >
+              <span
+                class="text-xs text-slate-400 line-through font-bold"
+                id="veg-old-price"
+                >₹50</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 flex items-center gap-2.5">
+          <div
+            class="flex items-center bg-slate-100 rounded-2xl p-1 border border-slate-200 shrink-0"
+          >
+            <button
+              class="w-8 h-8 rounded-xl bg-white shadow-sm font-black text-slate-800 active:scale-90"
+              onclick="updateQty('veg', -1)"
+            >
+              -
+            </button>
+            <span
+              class="w-8 text-center font-black text-sm text-slate-950"
+              id="qty-veg"
+              >1</span
+            >
+            <button
+              class="w-8 h-8 rounded-xl bg-white shadow-sm font-black text-slate-800 active:scale-90"
+              onclick="updateQty('veg', 1)"
+            >
+              +
+            </button>
+          </div>
+          <button
+            onclick="handleOrderPlacement('veg')"
+            class="flex-1 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white py-3 px-4 rounded-2xl font-black text-xs shadow-lg shadow-emerald-600/30 flex justify-center items-center gap-2 transition tracking-wider uppercase"
+          >
+            <i class="fa-solid fa-bolt"></i>
+            <span>ORDER VEG (₹<span id="btn-veg-price">30</span>)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. VIBRANT 100% HALAL NON-VEG CARD -->
+      <div
+        class="bg-white rounded-3xl p-4 shadow-md border-2 border-rose-500 hover:border-rose-600 transition relative overflow-hidden space-y-3.5"
+      >
+        <div class="flex justify-between items-center">
+          <span
+            class="bg-rose-600 text-white text-[10px] font-black px-3 py-1 rounded-lg uppercase tracking-wider flex items-center gap-1 shadow-sm"
+          >
+            <i class="fa-solid fa-certificate text-[9px]"></i> 100% Halal
+            Certified
+          </span>
+          <span
+            class="text-[11px] font-black bg-rose-100 text-rose-800 px-2.5 py-0.5 rounded-md border border-rose-300"
+            id="nonveg-badge"
+            >Save 30%</span
+          >
+        </div>
+
+        <div class="flex gap-3.5 items-center">
+          <div
+            class="relative w-24 h-24 shrink-0 rounded-2xl overflow-hidden shadow-inner cursor-pointer group"
+            onclick="
+              openGallery(
+                currentDayMenu.nonveg.image,
+                currentDayMenu.nonveg.name,
+              )
+            "
+          >
+            <img
+              id="nonveg-img"
+              src="https://images.unsplash.com/photo-1601050690597-df0568f70950?w=500&auto=format&fit=crop&q=80"
+              class="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+            />
+            <span
+              class="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded-md font-bold backdrop-blur-sm"
+            >
+              <i class="fa-solid fa-camera"></i> Photos
+            </span>
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <p
+              class="text-[11px] font-black text-rose-700 uppercase"
+              id="nonveg-portion"
+            >
+              Pack of 2 Pcs
+            </p>
+            <h3
+              class="font-black text-slate-950 text-base leading-snug truncate"
+              id="nonveg-name"
+            >
+              Spicy Chicken Keema Samosa
+            </h3>
+            <p
+              class="text-xs font-bold text-amber-500 mt-0.5 flex items-center gap-1"
+            >
+              <i class="fa-solid fa-star text-[10px]"></i> 4.8
+              <span class="text-slate-400 font-normal text-[11px]"
+                >(Fresh)</span
+              >
+            </p>
+
+            <div class="flex items-baseline gap-2 mt-1">
+              <span class="text-2xl font-black text-rose-600" id="nonveg-price"
+                >₹45</span
+              >
+              <span
+                class="text-xs text-slate-400 line-through font-bold"
+                id="nonveg-old-price"
+                >₹65</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 flex items-center gap-2.5">
+          <div
+            class="flex items-center bg-slate-100 rounded-2xl p-1 border border-slate-200 shrink-0"
+          >
+            <button
+              class="w-8 h-8 rounded-xl bg-white shadow-sm font-black text-slate-800 active:scale-90"
+              onclick="updateQty('nonveg', -1)"
+            >
+              -
+            </button>
+            <span
+              class="w-8 text-center font-black text-sm text-slate-950"
+              id="qty-nonveg"
+              >1</span
+            >
+            <button
+              class="w-8 h-8 rounded-xl bg-white shadow-sm font-black text-slate-800 active:scale-90"
+              onclick="updateQty('nonveg', 1)"
+            >
+              +
+            </button>
+          </div>
+          <button
+            onclick="handleOrderPlacement('nonveg')"
+            class="flex-1 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white py-3 px-4 rounded-2xl font-black text-xs shadow-lg shadow-rose-600/30 flex justify-center items-center gap-2 transition tracking-wider uppercase"
+          >
+            <i class="fa-solid fa-bolt"></i>
+            <span>ORDER HALAL (₹<span id="btn-nonveg-price">45</span>)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 3. TOMORROW'S SNEAK PEEK CAPSULE -->
+      <div
+        class="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/80 rounded-3xl p-3.5 shadow-sm flex items-center justify-between"
+      >
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 bg-amber-500 text-white rounded-2xl flex items-center justify-center text-base shadow"
+          >
+            <i class="fa-solid fa-lock"></i>
+          </div>
+          <div>
+            <span
+              class="text-[10px] font-black uppercase text-amber-800 tracking-wider"
+              >Tomorrow's Chef Special Drop</span
+            >
+            <p class="text-xs font-black text-slate-900">
+              🟢 Paneer Butter Roll & 🔴 Chicken Roll
+            </p>
+            <p class="text-[10px] text-slate-500 font-semibold">
+              Batch orders open tomorrow at 9:00 AM
+            </p>
+          </div>
+        </div>
+        <span
+          class="text-[10px] font-black text-amber-900 bg-amber-200/80 px-2 py-1 rounded-lg shrink-0"
+          >Next Up</span
+        >
+      </div>
+
+      <!-- 4. WEEKLY ROTATION CATALOG CAROUSEL -->
+      <div class="space-y-2 pt-2">
+        <div class="flex justify-between items-center px-1">
+          <div>
+            <h4
+              class="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-1.5"
+            >
+              <i class="fa-solid fa-sparkles text-amber-500"></i> Weekly Series
+              Calendar
+            </h4>
+            <p class="text-[10px] text-slate-500 font-semibold">
+              Different hot recipes rotated every single day
+            </p>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button
+              onclick="scrollCarousel(-160)"
+              class="w-6 h-6 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-700 flex items-center justify-center text-xs font-bold transition active:scale-90"
+            >
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <button
+              onclick="scrollCarousel(160)"
+              class="w-6 h-6 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-700 flex items-center justify-center text-xs font-bold transition active:scale-90"
+            >
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <div
+          id="weekly-carousel"
+          class="flex gap-3 overflow-x-auto pb-2 pt-1 no-scrollbar select-none cursor-grab active:cursor-grabbing scroll-smooth"
+        >
+          <div
+            class="min-w-[130px] max-w-[130px] bg-white rounded-2xl p-2.5 shadow-sm border border-slate-200 shrink-0 relative"
+          >
+            <span
+              class="absolute top-3.5 left-3.5 bg-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase shadow"
+              >Mon</span
+            >
+            <img
+              src="https://images.unsplash.com/photo-1601050690597-df0568f70950?w=300&auto=format&fit=crop&q=80"
+              class="w-full h-20 object-cover rounded-xl shadow-inner pointer-events-none"
+            />
+            <div class="mt-1.5 text-center">
+              <h5 class="font-black text-xs text-slate-900">Samosa Series</h5>
+              <p class="text-[10px] text-slate-400 font-semibold">
+                Veg & Keema
+              </p>
+            </div>
+          </div>
+          <div
+            class="min-w-[130px] max-w-[130px] bg-white rounded-2xl p-2.5 shadow-sm border border-slate-200 shrink-0 relative"
+          >
+            <span
+              class="absolute top-3.5 left-3.5 bg-slate-800 text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase shadow"
+              >Tue</span
+            >
+            <img
+              src="https://images.unsplash.com/photo-1541592106381-b31e9677c0e5?w=300&auto=format&fit=crop&q=80"
+              class="w-full h-20 object-cover rounded-xl shadow-inner pointer-events-none"
+            />
+            <div class="mt-1.5 text-center">
+              <h5 class="font-black text-xs text-slate-900">Cutlet Series</h5>
+              <p class="text-[10px] text-slate-400 font-semibold">
+                Beetroot & Chicken
+              </p>
+            </div>
+          </div>
+          <div
+            class="min-w-[130px] max-w-[130px] bg-white rounded-2xl p-2.5 shadow-sm border border-slate-200 shrink-0 relative"
+          >
+            <span
+              class="absolute top-3.5 left-3.5 bg-slate-800 text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase shadow"
+              >Wed</span
+            >
+            <img
+              src="https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?w=300&auto=format&fit=crop&q=80"
+              class="w-full h-20 object-cover rounded-xl shadow-inner pointer-events-none"
+            />
+            <div class="mt-1.5 text-center">
+              <h5 class="font-black text-xs text-slate-900">Roll Series</h5>
+              <p class="text-[10px] text-slate-400 font-semibold">
+                Paneer & Malabar
+              </p>
+            </div>
+          </div>
+          <div
+            class="min-w-[130px] max-w-[130px] bg-white rounded-2xl p-2.5 shadow-sm border border-slate-200 shrink-0 relative"
+          >
+            <span
+              class="absolute top-3.5 left-3.5 bg-slate-800 text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase shadow"
+              >Thu</span
+            >
+            <img
+              src="https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=300&auto=format&fit=crop&q=80"
+              class="w-full h-20 object-cover rounded-xl shadow-inner pointer-events-none"
+            />
+            <div class="mt-1.5 text-center">
+              <h5 class="font-black text-xs text-slate-900">Sandwich Series</h5>
+              <p class="text-[10px] text-slate-400 font-semibold">
+                Corn & Chicken Club
+              </p>
+            </div>
+          </div>
+          <div
+            class="min-w-[130px] max-w-[130px] bg-white rounded-2xl p-2.5 shadow-sm border border-slate-200 shrink-0 relative"
+          >
+            <span
+              class="absolute top-3.5 left-3.5 bg-slate-800 text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase shadow"
+              >Fri</span
+            >
+            <img
+              src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300&auto=format&fit=crop&q=80"
+              class="w-full h-20 object-cover rounded-xl shadow-inner pointer-events-none"
+            />
+            <div class="mt-1.5 text-center">
+              <h5 class="font-black text-xs text-slate-900">Burger Series</h5>
+              <p class="text-[10px] text-slate-400 font-semibold">
+                Crispy Veg & Patty
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 2-Button High Impact Bottom Navigation Bar -->
+    <nav
+      class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-2xl py-3 px-4"
+    >
+      <div class="max-w-md mx-auto grid grid-cols-2 gap-3 text-center">
+        <button
+          onclick="openSubscriptionModal()"
+          class="flex items-center justify-center gap-2 text-emerald-950 font-black text-xs bg-emerald-100 hover:bg-emerald-200 border border-emerald-300/80 py-3 rounded-2xl transition active:scale-95 shadow-sm"
+        >
+          <i class="fa-solid fa-calendar-days text-base text-emerald-700"></i>
+          Subscriptions
+        </button>
+        <button
+          onclick="openProfileModal()"
+          class="flex items-center justify-center gap-2 text-slate-800 hover:text-slate-950 font-bold text-xs bg-slate-100 hover:bg-slate-200 border border-slate-200 py-3 rounded-2xl transition active:scale-95"
+        >
+          <i class="fa-regular fa-user text-base text-slate-500"></i> My Profile
+        </button>
+      </div>
+    </nav>
+
+    <!-- 1. Subscription Plan & Multi-Meal Enquiry Modal -->
+    <div
+      id="subscription-modal"
+      class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4"
+    >
+      <div
+        class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4 relative max-h-[90vh] overflow-y-auto"
+      >
+        <button
+          onclick="closeSubscriptionModal()"
+          class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center"
+        >
+          &times;
+        </button>
+
+        <div class="text-center space-y-1 pt-1">
+          <span
+            class="text-[10px] font-black uppercase text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full tracking-wider"
+          >
+            Corporate & Desk Plans
+          </span>
+          <h3 class="text-base font-black text-slate-900">
+            Meal Pass Subscriptions
+          </h3>
+          <p class="text-xs text-slate-500 font-medium">
+            Select your preferred meals and billing cycle
+          </p>
+        </div>
+
+        <!-- Meal Type Multi-Selector -->
+        <div class="space-y-1.5">
+          <label
+            class="text-[10px] font-black uppercase text-slate-500 tracking-wider"
+            >1. Select Meal Services</label
+          >
+          <div class="grid grid-cols-3 gap-2">
+            <label
+              class="flex flex-col items-center justify-center p-2.5 bg-slate-50 border border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-100 has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-900 transition"
+            >
+              <input
+                type="checkbox"
+                id="sub-meal-bf"
+                value="Breakfast"
+                class="hidden"
+                checked
+              />
+              <i
+                class="fa-solid fa-bowl-rice text-base mb-1 text-emerald-600"
+              ></i>
+              <span class="text-[11px] font-bold">Breakfast</span>
+            </label>
+            <label
+              class="flex flex-col items-center justify-center p-2.5 bg-slate-50 border border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-100 has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-900 transition"
+            >
+              <input
+                type="checkbox"
+                id="sub-meal-lunch"
+                value="Meals/Lunch"
+                class="hidden"
+                checked
+              />
+              <i
+                class="fa-solid fa-utensils text-base mb-1 text-emerald-600"
+              ></i>
+              <span class="text-[11px] font-bold">Meals</span>
+            </label>
+            <label
+              class="flex flex-col items-center justify-center p-2.5 bg-slate-50 border border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-100 has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-900 transition"
+            >
+              <input
+                type="checkbox"
+                id="sub-meal-dinner"
+                value="Dinner"
+                class="hidden"
+              />
+              <i class="fa-solid fa-moon text-base mb-1 text-emerald-600"></i>
+              <span class="text-[11px] font-bold">Dinner</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Plan Duration Radio -->
+        <div class="space-y-1.5">
+          <label
+            class="text-[10px] font-black uppercase text-slate-500 tracking-wider"
+            >2. Choose Plan Cycle</label
+          >
+          <div class="grid grid-cols-3 gap-2">
+            <label
+              class="flex flex-col items-center p-2.5 bg-slate-50 border border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-100 has-[:checked]:bg-emerald-600 has-[:checked]:text-white has-[:checked]:border-emerald-600 transition"
+            >
+              <input
+                type="radio"
+                name="plan_duration"
+                value="Daily Pass"
+                class="hidden"
+              />
+              <span class="text-xs font-black">Daily</span>
+              <span class="text-[9px] opacity-80">Flexible</span>
+            </label>
+            <label
+              class="flex flex-col items-center p-2.5 bg-slate-50 border border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-100 has-[:checked]:bg-emerald-600 has-[:checked]:text-white has-[:checked]:border-emerald-600 transition"
+            >
+              <input
+                type="radio"
+                name="plan_duration"
+                value="Weekly Subscription (5-6 Days)"
+                class="hidden"
+                checked
+              />
+              <span class="text-xs font-black">Weekly</span>
+              <span class="text-[9px] opacity-80">Popular</span>
+            </label>
+            <label
+              class="flex flex-col items-center p-2.5 bg-slate-50 border border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-100 has-[:checked]:bg-emerald-600 has-[:checked]:text-white has-[:checked]:border-emerald-600 transition"
+            >
+              <input
+                type="radio"
+                name="plan_duration"
+                value="Monthly Corporate Plan"
+                class="hidden"
+              />
+              <span class="text-xs font-black">Monthly</span>
+              <span class="text-[9px] opacity-80">Best Value</span>
+            </label>
+          </div>
+        </div>
+
+        <div
+          class="bg-slate-50 border border-slate-200 rounded-2xl p-3 text-[11px] text-slate-600 space-y-1"
+        >
+          <p class="font-bold text-slate-800 flex items-center gap-1">
+            <i class="fa-solid fa-truck-fast text-emerald-600"></i> Hot Desk
+            Delivery
+          </p>
+          <p>
+            Insulated batch delivery right to your staff room before each meal
+            slot.
+          </p>
+        </div>
+
+        <button
+          onclick="sendSubscriptionWhatsApp()"
+          class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black py-3.5 rounded-2xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition uppercase tracking-wider"
+        >
+          <i class="fa-brands fa-whatsapp text-lg"></i> Enquire Plan on WhatsApp
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. Profile, Desk Location & Ledger Manager Modal -->
+    <div
+      id="profile-modal"
+      class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4"
+    >
+      <div
+        class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4 relative max-h-[90vh] overflow-y-auto"
+      >
+        <button
+          onclick="closeProfileModal()"
+          class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center"
+        >
+          &times;
+        </button>
+
+        <div class="text-center space-y-1 pt-1">
+          <div
+            class="w-12 h-12 bg-slate-100 text-slate-700 rounded-2xl flex items-center justify-center mx-auto text-xl font-bold"
+          >
+            <i class="fa-regular fa-id-badge"></i>
+          </div>
+          <h3
+            class="text-base font-black text-slate-900"
+            id="profile-display-name"
+          >
+            My Profile
+          </h3>
+          <p class="text-xs text-slate-500 font-medium">
+            Saved details & order management
+          </p>
+        </div>
+
+        <div class="space-y-2.5">
+          <div>
+            <label
+              class="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider"
+              >Full Name</label
+            >
+            <input
+              type="text"
+              id="prof-input-name"
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-semibold mt-1"
+            />
+          </div>
+          <div>
+            <label
+              class="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider"
+              >WhatsApp Phone</label
+            >
+            <input
+              type="tel"
+              id="prof-input-phone"
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-semibold mt-1"
+            />
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label
+                class="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider"
+                >Staff Room / Block</label
+              >
+              <input
+                type="text"
+                id="prof-input-block"
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-semibold mt-1"
+              />
+            </div>
+            <div>
+              <label
+                class="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider"
+                >Floor / Room</label
+              >
+              <input
+                type="text"
+                id="prof-input-floor"
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-semibold mt-1"
+              />
+            </div>
+          </div>
+        </div>
+
+        <button
+          onclick="saveProfileChanges()"
+          class="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-2.5 rounded-xl text-xs transition active:scale-95"
+        >
+          Update Profile & Spot
+        </button>
+
+        <div class="border-t border-slate-100 pt-3 space-y-2">
+          <button
+            onclick="
+              closeProfileModal();
+              openHistoryModal();
+            "
+            class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition"
+          >
+            <i class="fa-solid fa-clock-rotate-left text-slate-500"></i> View
+            Past Orders & Bills
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Order & Payment History Modal -->
+    <div
+      id="history-modal"
+      class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4"
+    >
+      <div
+        class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 relative max-h-[85vh] flex flex-col"
+      >
+        <div
+          class="flex justify-between items-center border-b border-slate-100 pb-3"
+        >
+          <h3
+            class="text-sm font-black text-slate-900 flex items-center gap-1.5"
+          >
+            <i class="fa-solid fa-clock-rotate-left text-amber-500"></i> My
+            Order & Payment History
+          </h3>
+          <button
+            onclick="closeHistoryModal()"
+            class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center"
+          >
+            &times;
+          </button>
+        </div>
+
+        <div
+          class="overflow-y-auto flex-1 space-y-2 pr-1"
+          id="history-items-container"
+        >
+          <p class="text-center text-slate-400 text-xs py-6">
+            Loading past orders...
+          </p>
+        </div>
+
+        <div
+          class="border-t border-slate-100 pt-3 flex justify-between items-center text-xs"
+        >
+          <span class="font-bold text-slate-500">Total Unpaid:</span>
+          <span
+            class="font-black text-rose-600 text-base"
+            id="history-total-unpaid"
+            >₹0</span
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Ledger & UPI Payment Modal -->
+    <div
+      id="ledger-modal"
+      class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4"
+    >
+      <div
+        class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4 relative"
+      >
+        <div
+          class="flex justify-between items-center border-b border-slate-100 pb-3"
+        >
+          <h3
+            class="text-sm font-black text-slate-900 flex items-center gap-1.5"
+          >
+            <i class="fa-solid fa-receipt text-emerald-600"></i> Office Snack
+            Ledger
+          </h3>
+          <button
+            onclick="closeLedgerModal()"
+            class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center"
+          >
+            &times;
+          </button>
+        </div>
+
+        <div
+          class="bg-emerald-50 border border-emerald-200 rounded-3xl p-5 text-center space-y-1"
+        >
+          <p
+            class="text-[10px] text-emerald-800 font-black uppercase tracking-wider"
+          >
+            Total Pending Due
+          </p>
+          <h4
+            class="text-3xl font-black text-emerald-950"
+            id="ledger-modal-due"
+          >
+            ₹0
+          </h4>
+          <div class="flex justify-center items-center gap-2 pt-2">
+            <span class="text-[11px] text-slate-600 font-semibold"
+              >Limit:
+              <b id="user-credit-limit-badge" class="text-slate-900 font-bold"
+                >₹500</b
+              ></span
+            >
+            <span
+              class="text-[10px] text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md font-black"
+              id="credit-available-badge"
+              >Available: ₹500</span
+            >
+          </div>
+        </div>
+
+        <div class="space-y-2 pt-1">
+          <a
+            id="gpay-intent-btn"
+            href="#"
+            class="w-full bg-slate-950 hover:bg-slate-900 active:scale-95 text-white font-black py-3.5 rounded-2xl flex items-center justify-center gap-2 text-xs shadow-md transition"
+          >
+            <i class="fa-brands fa-google-pay text-lg"></i> Clear Now via UPI
+          </a>
+          <button
+            onclick="confirmPayLater()"
+            class="w-full bg-emerald-100 hover:bg-emerald-200 active:scale-95 border border-emerald-300 text-emerald-900 font-bold py-3 rounded-2xl flex items-center justify-center gap-1.5 text-xs transition"
+          >
+            <i class="fa-solid fa-calendar-check text-emerald-700"></i> Pay
+            Later (Add to Weekly Bill)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Gallery Lightbox Modal -->
+    <div
+      id="gallery-modal"
+      class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4"
+    >
+      <div
+        class="bg-white rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl relative"
+      >
+        <button
+          onclick="closeGallery()"
+          class="absolute top-3 right-3 w-8 h-8 bg-black/60 text-white rounded-full flex items-center justify-center z-10"
+        >
+          &times;
+        </button>
+        <img id="gallery-img" src="" class="w-full h-64 object-cover" />
+        <div class="p-4">
+          <h4 id="gallery-title" class="font-black text-sm text-slate-900"></h4>
+          <p class="text-xs text-slate-500 mt-0.5">
+            Insulated batch drop at your desk.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Application Script Engine -->
+    <script>
+      const SUPABASE_URL = "https://droxpyfhknkswaabsabk.supabase.co";
+      const SUPABASE_ANON_KEY =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyb3hweWZoa25rc3dhYWJzYWJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwNjgzNDIsImV4cCI6MjEwMzY0NDM0Mn0.bSawsQ0t6Cls4QjpTxhk6Mp80GFlFUg1lTqLk87fxuM"; // Paste your public anon key here
+      const UPI_ID = "9629511751@ybl";
+      const ADMIN_WHATSAPP = "9629511751"; // Replace with your Tastea WhatsApp Number
+
+      let supabaseClient = null;
+      try {
+        if (
+          SUPABASE_URL.startsWith("http") &&
+          !SUPABASE_ANON_KEY.includes("YOUR_ANON_KEY")
+        ) {
+          supabaseClient = supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_ANON_KEY,
+          );
+        }
+      } catch (e) {
+        console.warn("Supabase bypassed.");
+      }
+
+      let currentDayMenu = {
+        veg: {
+          name: "Crispy Veg Samosa",
+          portion: "Pack of 2 Pcs",
+          price: 30,
+          oldPrice: 50,
+          badge: "Save 40%",
+          image:
+            "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=500&auto=format&fit=crop&q=80",
+        },
+        nonveg: {
+          name: "Spicy Chicken Keema Samosa",
+          portion: "Pack of 2 Pcs",
+          price: 45,
+          oldPrice: 65,
+          badge: "Save 30%",
+          image:
+            "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=500&auto=format&fit=crop&q=80",
+        },
+      };
+
+      const quantities = { veg: 1, nonveg: 1 };
+      let currentUser = JSON.parse(
+        localStorage.getItem("tastea_user") || "null",
+      );
+      let currentBuilding = null;
+      let totalPendingDue = 0;
+      let userCreditLimit = 500;
+      let userOrdersList = [];
+
+      window.onload = async function () {
+        if (currentUser) {
+          document.getElementById("user-display").innerHTML =
+            `<i class="fa-regular fa-user text-emerald-600"></i> ${currentUser.name.split(" ")[0]}`;
+          await fetchUserDue();
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const buildingSlug = urlParams.get("b") || "alpha-tech";
+
+        if (supabaseClient) {
+          try {
+            const { data: bldg } = await supabaseClient
+              .from("buildings")
+              .select("*")
+              .eq("qr_code_slug", buildingSlug)
+              .maybeSingle();
+
+            if (bldg) {
+              currentBuilding = bldg;
+              document.getElementById("header-building-name").innerHTML =
+                `<i class="fa-solid fa-location-dot text-emerald-600 text-[10px]"></i> ${bldg.campus_name}`;
+              document.getElementById("cutoff-display").innerText =
+                `Cut-off: ${bldg.cutoff_slot || "12:30 PM"}`;
+              document.getElementById("delivery-display").innerText =
+                `🚚 Desk Drop: ${bldg.delivery_slot || "03:30 PM"}`;
+            }
+          } catch (err) {
+            console.warn("Building query skipped:", err);
+          }
+        }
+
+        if (!currentBuilding) {
+          document.getElementById("header-building-name").innerHTML =
+            `<i class="fa-solid fa-location-dot text-emerald-600 text-[10px]"></i> Tastea Campus Partner`;
+        }
+
+        await loadBuildingMenu();
+      };
+
+      async function loadBuildingMenu() {
+        if (supabaseClient) {
+          try {
+            let items = null;
+
+            if (currentBuilding) {
+              const { data: bldgItems } = await supabaseClient
+                .from("menu_items")
+                .select("*")
+                .eq("is_active_today", true)
+                .eq("building_id", currentBuilding.id);
+              if (bldgItems && bldgItems.length > 0) items = bldgItems;
+            }
+
+            if (!items || items.length === 0) {
+              const { data: globalItems } = await supabaseClient
+                .from("menu_items")
+                .select("*")
+                .eq("is_active_today", true)
+                .is("building_id", null);
+              if (globalItems && globalItems.length > 0) items = globalItems;
+            }
+
+            if (items && items.length > 0) {
+              const v = items.find((i) => i.category_type === "veg");
+              const nv = items.find((i) => i.category_type === "nonveg");
+
+              if (v) {
+                currentDayMenu.veg = {
+                  id: v.id,
+                  name: v.item_name,
+                  portion: v.portion_badge || "Pack of 2 Pcs",
+                  price:
+                    v.final_price ||
+                    Math.round(
+                      v.base_price - (v.base_price * v.discount_pct) / 100,
+                    ),
+                  oldPrice: v.base_price,
+                  badge: `Save ${v.discount_pct}%`,
+                  image: v.image_url || currentDayMenu.veg.image,
+                };
+              }
+
+              if (nv) {
+                currentDayMenu.nonveg = {
+                  id: nv.id,
+                  name: nv.item_name,
+                  portion: nv.portion_badge || "Pack of 2 Pcs",
+                  price:
+                    nv.final_price ||
+                    Math.round(
+                      nv.base_price - (nv.base_price * nv.discount_pct) / 100,
+                    ),
+                  oldPrice: nv.base_price,
+                  badge: `Save ${nv.discount_pct}%`,
+                  image: nv.image_url || currentDayMenu.nonveg.image,
+                };
+              }
+            }
+          } catch (e) {
+            console.warn("Menu fetch error:", e);
+          }
+        }
+
+        // Render Veg Card & Button
+        document.getElementById("veg-name").innerText = currentDayMenu.veg.name;
+        document.getElementById("veg-portion").innerText =
+          currentDayMenu.veg.portion;
+        document.getElementById("veg-price").innerText =
+          `₹${currentDayMenu.veg.price}`;
+        document.getElementById("veg-old-price").innerText =
+          `₹${currentDayMenu.veg.oldPrice}`;
+        document.getElementById("veg-badge").innerText =
+          currentDayMenu.veg.badge;
+        document.getElementById("veg-img").src = currentDayMenu.veg.image;
+        document.getElementById("btn-veg-price").innerText =
+          currentDayMenu.veg.price;
+
+        // Render Non-Veg Card & Button
+        document.getElementById("nonveg-name").innerText =
+          currentDayMenu.nonveg.name;
+        document.getElementById("nonveg-portion").innerText =
+          currentDayMenu.nonveg.portion;
+        document.getElementById("nonveg-price").innerText =
+          `₹${currentDayMenu.nonveg.price}`;
+        document.getElementById("nonveg-old-price").innerText =
+          `₹${currentDayMenu.nonveg.oldPrice}`;
+        document.getElementById("nonveg-badge").innerText =
+          currentDayMenu.nonveg.badge;
+        document.getElementById("nonveg-img").src = currentDayMenu.nonveg.image;
+        document.getElementById("btn-nonveg-price").innerText =
+          currentDayMenu.nonveg.price;
+      }
+
+      async function fetchUserDue() {
+        if (!currentUser || !supabaseClient) return;
+        try {
+          const { data: orders } = await supabaseClient
+            .from("food_orders")
+            .select("*")
+            .eq("user_phone", currentUser.phone)
+            .order("created_at", { ascending: false });
+
+          userOrdersList = orders || [];
+
+          if (orders) {
+            totalPendingDue = orders
+              .filter((o) => o.payment_status === "credit_due")
+              .reduce((sum, o) => sum + Number(o.total_price || 0), 0);
+          }
+
+          const { data: cust } = await supabaseClient
+            .from("customers")
+            .select("credit_limit")
+            .eq("phone", currentUser.phone)
+            .maybeSingle();
+
+          if (cust && cust.credit_limit !== null) {
+            userCreditLimit = Number(cust.credit_limit);
+          }
+        } catch (e) {
+          console.warn("Due calculation error:", e);
+        }
+
+        const availableLimit = Math.max(0, userCreditLimit - totalPendingDue);
+
+        document.getElementById("hero-available-credit").innerText =
+          `₹${availableLimit}`;
+        document.getElementById("hero-credit-limit-sub").innerHTML =
+          `Approved Limit: ₹${userCreditLimit} • Due: <span class="text-amber-400 font-bold underline cursor-pointer" onclick="openLedgerModal()">₹${totalPendingDue} (Tap to Pay)</span>`;
+        document.getElementById("ledger-modal-due").innerText =
+          `₹${totalPendingDue}`;
+        document.getElementById("history-total-unpaid").innerText =
+          `₹${totalPendingDue}`;
+        document.getElementById("user-credit-limit-badge").innerText =
+          `₹${userCreditLimit}`;
+        document.getElementById("credit-available-badge").innerText =
+          `Available: ₹${availableLimit}`;
+        document.getElementById("gpay-intent-btn").href =
+          `upi://pay?pa=${UPI_ID}&pn=Tastea&am=${totalPendingDue}&cu=INR&tn=Snack_Bill`;
+      }
+
+      function updateQty(type, delta) {
+        quantities[type] = Math.max(1, Math.min(10, quantities[type] + delta));
+        document.getElementById(`qty-${type}`).innerText = quantities[type];
+      }
+
+      // Profile & Registration Functions
+      function openProfileModal() {
+        if (!currentUser) {
+          openLoginModal();
+          return;
+        }
+        document.getElementById("profile-display-name").innerText =
+          currentUser.name;
+        document.getElementById("prof-input-name").value = currentUser.name;
+        document.getElementById("prof-input-phone").value = currentUser.phone;
+        document.getElementById("prof-input-block").value =
+          currentUser.block || "";
+        document.getElementById("prof-input-floor").value =
+          currentUser.floor || "";
+        document.getElementById("profile-modal").classList.remove("hidden");
+      }
+
+      function closeProfileModal() {
+        document.getElementById("profile-modal").classList.add("hidden");
+      }
+
+      function saveProfileChanges() {
+        const name = document.getElementById("prof-input-name").value.trim();
+        const phone = document.getElementById("prof-input-phone").value.trim();
+        const block = document.getElementById("prof-input-block").value.trim();
+        const floor = document.getElementById("prof-input-floor").value.trim();
+
+        if (!name || phone.length < 10 || !block || !floor) {
+          alert("Please fill in Name, 10-digit Phone, Block, and Floor.");
+          return;
+        }
+
+        currentUser = { name, phone, block, floor };
+        localStorage.setItem("tastea_user", JSON.stringify(currentUser));
+        document.getElementById("user-display").innerHTML =
+          `<i class="fa-regular fa-user text-emerald-600"></i> ${name.split(" ")[0]}`;
+        closeProfileModal();
+        fetchUserDue();
+        alert("✅ Profile details updated!");
+      }
+
+      function openLoginModal() {
+        openProfileModal();
+      }
+
+      async function handleOrderPlacement(type) {
+        if (!currentUser) {
+          openProfileModal();
+          return;
+        }
+
+        const item = currentDayMenu[type];
+        const qty = quantities[type];
+        const total = qty * item.price;
+
+        if (totalPendingDue + total > userCreditLimit) {
+          alert(
+            `⚠️ Credit Limit Exceeded!\n\nYour limit is ₹${userCreditLimit} (Current Due: ₹${totalPendingDue}).\nPlease clear previous bills via UPI to place new orders.`,
+          );
+          openLedgerModal();
+          return;
+        }
+
+        const payload = {
+          user_name: currentUser.name,
+          user_phone: currentUser.phone,
+          customer_block: currentUser.block,
+          customer_floor: currentUser.floor,
+          item_name: item.name,
+          portion_badge: item.portion,
+          quantity: qty,
+          total_price: total,
+          payment_status: "credit_due",
+          building_id: currentBuilding ? currentBuilding.id : null,
+        };
+
+        if (supabaseClient) {
+          try {
+            await supabaseClient.from("food_orders").insert([payload]);
+          } catch (err) {
+            console.warn("Order insert error:", err);
+          }
+        }
+
+        totalPendingDue += total;
+        await fetchUserDue();
+
+        alert(
+          `🎉 Order Confirmed!\n\n${item.name} (${qty} Qty)\nDelivery To: ${currentUser.block} • ${currentUser.floor}\nTotal: ₹${total}\n\nAdded to your Pay Later Ledger.`,
+        );
+      }
+
+      // Subscriptions Modal & WhatsApp Dispatch
+      function openSubscriptionModal() {
+        document
+          .getElementById("subscription-modal")
+          .classList.remove("hidden");
+      }
+
+      function closeSubscriptionModal() {
+        document.getElementById("subscription-modal").classList.add("hidden");
+      }
+
+      function sendSubscriptionWhatsApp() {
+        const selectedMeals = [];
+        if (document.getElementById("sub-meal-bf").checked)
+          selectedMeals.push("Breakfast");
+        if (document.getElementById("sub-meal-lunch").checked)
+          selectedMeals.push("Meals/Lunch");
+        if (document.getElementById("sub-meal-dinner").checked)
+          selectedMeals.push("Dinner");
+
+        if (selectedMeals.length === 0) {
+          alert("Please select at least one meal service.");
+          return;
+        }
+
+        const planCycle =
+          document.querySelector('input[name="plan_duration"]:checked')
+            ?.value || "Weekly Plan";
+        const campus = currentBuilding
+          ? currentBuilding.campus_name
+          : "Our Campus";
+        const staffName = currentUser ? currentUser.name : "Staff Member";
+        const spot = currentUser
+          ? `${currentUser.block} • ${currentUser.floor}`
+          : "Staff Room";
+
+        const message =
+          `🍱 *Tastea Meal Subscription Enquiry*\n\n` +
+          `🏫 *Campus:* ${campus}\n` +
+          `📍 *Delivery Spot:* ${spot}\n` +
+          `👤 *Staff Name:* ${staffName}\n\n` +
+          `📋 *Selected Meals:* ${selectedMeals.join(", ")}\n` +
+          `⏱️ *Plan Cycle:* ${planCycle}\n\n` +
+          `Please share the upcoming menu schedule and pricing options!`;
+
+        window.open(
+          `https://wa.me/${ADMIN_WHATSAPP}?text=${encodeURIComponent(message)}`,
+          "_blank",
+        );
+      }
+
+      // History Modal Controller
+      function openHistoryModal() {
+        if (!currentUser) {
+          openProfileModal();
+          return;
+        }
+        renderHistoryItems();
+        document.getElementById("history-modal").classList.remove("hidden");
+      }
+
+      function closeHistoryModal() {
+        document.getElementById("history-modal").classList.add("hidden");
+      }
+
+      function renderHistoryItems() {
+        const container = document.getElementById("history-items-container");
+        container.innerHTML = "";
+
+        if (userOrdersList.length === 0) {
+          container.innerHTML = `<p class="text-center text-slate-400 text-xs py-8">No order history found yet.</p>`;
+          return;
+        }
+
+        userOrdersList.forEach((o) => {
+          const dateStr = new Date(
+            o.created_at || Date.now(),
+          ).toLocaleDateString("en-IN", {
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+          const isPaid = o.payment_status === "paid";
+          const statusBadge = isPaid
+            ? `<span class="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded uppercase">Paid</span>`
+            : `<span class="bg-rose-100 text-rose-800 text-[10px] font-black px-2 py-0.5 rounded uppercase">Credit Due</span>`;
+
+          container.innerHTML += `
+                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex justify-between items-center text-xs">
+                        <div>
+                            <p class="font-extrabold text-slate-900">${o.item_name}</p>
+                            <p class="text-[10px] text-slate-500 font-semibold">${dateStr} • Qty: ${o.quantity}</p>
+                        </div>
+                        <div class="text-right space-y-1">
+                            <span class="font-black text-slate-900 block">₹${o.total_price}</span>
+                            ${statusBadge}
+                        </div>
+                    </div>
+                `;
+        });
+      }
+
+      function confirmPayLater() {
+        closeLedgerModal();
+        alert(
+          "✅ Added to your Pay Later account. You can clear this bill at the end of the week!",
+        );
+      }
+
+      function openLedgerModal() {
+        if (!currentUser) {
+          openProfileModal();
+          return;
+        }
+        fetchUserDue();
+        document.getElementById("ledger-modal").classList.remove("hidden");
+      }
+      function closeLedgerModal() {
+        document.getElementById("ledger-modal").classList.add("hidden");
+      }
+      function openGallery(imgUrl, title) {
+        document.getElementById("gallery-img").src = imgUrl;
+        document.getElementById("gallery-title").innerText = title;
+        document.getElementById("gallery-modal").classList.remove("hidden");
+      }
+      function closeGallery() {
+        document.getElementById("gallery-modal").classList.add("hidden");
+      }
+      function scrollCarousel(distance) {
+        document
+          .getElementById("weekly-carousel")
+          .scrollBy({ left: distance, behavior: "smooth" });
+      }
+    </script>
+  </body>
+</html>

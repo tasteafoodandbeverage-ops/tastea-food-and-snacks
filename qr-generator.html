@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tastea Floor QR Generator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <!-- QR Code Styling Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.6.0-rc.1/lib/qr-code-styling.js"></script>
+    <!-- Supabase JS Client SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        #printable-tent,
+        #printable-tent * {
+          visibility: visible;
+        }
+        #printable-tent {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+        }
+        .no-print {
+          display: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-slate-900 text-slate-100 min-h-screen p-6 font-sans">
+    <div class="max-w-4xl mx-auto space-y-6">
+      <!-- Header -->
+      <header
+        class="flex justify-between items-center bg-slate-800 p-4 rounded-2xl border border-slate-700 no-print"
+      >
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-lg font-bold"
+          >
+            <i class="fa-solid fa-qrcode"></i>
+          </div>
+          <div>
+            <h1 class="text-base font-black">
+              TASTEA
+              <span class="text-emerald-400 font-bold"
+                >QR Standee Generator</span
+              >
+            </h1>
+            <p class="text-xs text-slate-400">
+              Generate Floor & Pantry Specific Table Tents
+            </p>
+          </div>
+        </div>
+        <button
+          onclick="window.print()"
+          class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition"
+        >
+          <i class="fa-solid fa-print"></i> Print Standee
+        </button>
+      </header>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Configuration Form -->
+        <div
+          class="bg-slate-800 border border-slate-700 p-5 rounded-3xl space-y-4 no-print"
+        >
+          <h2
+            class="text-xs font-black uppercase text-slate-400 tracking-wider flex items-center gap-2"
+          >
+            <i class="fa-solid fa-sliders text-amber-400"></i> Location
+            Configuration
+          </h2>
+
+          <div class="space-y-3">
+            <div>
+              <label class="text-[11px] font-bold text-slate-400 uppercase"
+                >Campus / IT Park</label
+              >
+              <input
+                type="text"
+                id="input-campus"
+                value="Alpha Tech City"
+                oninput="updateStandee()"
+                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-emerald-500 mt-1"
+              />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-[11px] font-bold text-slate-400 uppercase"
+                  >Block / Tower</label
+                >
+                <input
+                  type="text"
+                  id="input-block"
+                  value="Block A"
+                  oninput="updateStandee()"
+                  class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-emerald-500 mt-1"
+                />
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-slate-400 uppercase"
+                  >Floor / Pantry Point</label
+                >
+                <input
+                  type="text"
+                  id="input-floor"
+                  value="3rd Floor Pantry"
+                  oninput="updateStandee()"
+                  class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-emerald-500 mt-1"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label class="text-[11px] font-bold text-slate-400 uppercase"
+                >URL Slug (Parameter)</label
+              >
+              <input
+                type="text"
+                id="input-slug"
+                value="alpha-a-f3"
+                oninput="updateStandee()"
+                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-emerald-500 mt-1"
+              />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-[11px] font-bold text-slate-400 uppercase"
+                  >Cut-Off Time</label
+                >
+                <input
+                  type="text"
+                  id="input-cutoff"
+                  value="12:00 PM - 12:30 PM"
+                  oninput="updateStandee()"
+                  class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-emerald-500 mt-1"
+                />
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-slate-400 uppercase"
+                  >Delivery Slot</label
+                >
+                <input
+                  type="text"
+                  id="input-delivery"
+                  value="03:30 PM - 04:00 PM"
+                  oninput="updateStandee()"
+                  class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-emerald-500 mt-1"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label class="text-[11px] font-bold text-slate-400 uppercase"
+                >Base Domain URL</label
+              >
+              <input
+                type="text"
+                id="input-domain"
+                value="https://tastea.in/foodpass"
+                oninput="updateStandee()"
+                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-emerald-500 mt-1"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Standee Live Preview / Printable Canvas -->
+        <div class="flex justify-center items-center">
+          <div
+            id="printable-tent"
+            class="w-[340px] bg-white text-slate-900 rounded-3xl p-6 shadow-2xl border-4 border-emerald-600 flex flex-col items-center text-center space-y-4"
+          >
+            <!-- Branding Badge -->
+            <div
+              class="bg-emerald-700 text-white py-1.5 px-4 rounded-full flex items-center gap-2 shadow-sm"
+            >
+              <i class="fa-solid fa-mug-hot text-amber-300"></i>
+              <span class="font-black text-xs tracking-wider uppercase"
+                >TASTEA FOOD PASS</span
+              >
+            </div>
+
+            <!-- Target Location -->
+            <div>
+              <h3 class="text-lg font-black text-slate-900" id="preview-campus">
+                Alpha Tech City
+              </h3>
+              <p
+                class="text-xs font-bold text-emerald-700 mt-0.5"
+                id="preview-location"
+              >
+                3rd Floor Pantry • Block A
+              </p>
+            </div>
+
+            <!-- QR Display Box -->
+            <div
+              class="p-3 bg-slate-50 border-2 border-dashed border-emerald-500/40 rounded-2xl flex items-center justify-center"
+            >
+              <div id="qr-target" class="w-48 h-48"></div>
+            </div>
+
+            <div class="space-y-1">
+              <p
+                class="text-xs font-black text-slate-800 flex items-center justify-center gap-1"
+              >
+                <i class="fa-solid fa-camera text-emerald-600"></i> SCAN TO
+                ORDER TODAY'S SNACK
+              </p>
+              <p class="text-[10px] text-slate-500 font-medium">
+                No app download • Auto Floor Delivery
+              </p>
+            </div>
+
+            <!-- Delivery Timetable Badge -->
+            <div
+              class="w-full bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 text-[11px] font-semibold text-emerald-900 space-y-0.5"
+            >
+              <p>
+                ⏱️ <span class="font-bold">Cut-Off:</span>
+                <span id="preview-cutoff">12:00 PM - 12:30 PM</span>
+              </p>
+              <p>
+                🚚 <span class="font-bold">Delivery:</span>
+                <span id="preview-delivery">03:30 PM - 04:00 PM</span>
+              </p>
+            </div>
+
+            <p
+              class="text-[9px] text-slate-400 uppercase tracking-wider font-bold"
+            >
+              Insulated Fresh Delivery • Tastea F&B
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Generator Script -->
+    <script>
+      let qrCodeInstance = null;
+
+      function initQR() {
+        qrCodeInstance = new QRCodeStyling({
+          width: 192,
+          height: 192,
+          type: "svg",
+          data: "https://tastea.in/foodpass?b=alpha-a-f3",
+          dotsOptions: {
+            color: "#047857",
+            type: "rounded",
+          },
+          cornersSquareOptions: {
+            color: "#065f46",
+            type: "extra-rounded",
+          },
+          backgroundOptions: {
+            color: "#f8fafc",
+          },
+        });
+        qrCodeInstance.append(document.getElementById("qr-target"));
+      }
+
+      function updateStandee() {
+        const campus = document.getElementById("input-campus").value;
+        const block = document.getElementById("input-block").value;
+        const floor = document.getElementById("input-floor").value;
+        const slug = document.getElementById("input-slug").value;
+        const cutoff = document.getElementById("input-cutoff").value;
+        const delivery = document.getElementById("input-delivery").value;
+        const domain = document.getElementById("input-domain").value;
+
+        document.getElementById("preview-campus").innerText = campus;
+        document.getElementById("preview-location").innerText =
+          `${floor} • ${block}`;
+        document.getElementById("preview-cutoff").innerText = cutoff;
+        document.getElementById("preview-delivery").innerText = delivery;
+
+        const fullUrl = `${domain}?b=${encodeURIComponent(slug)}`;
+        if (qrCodeInstance) {
+          qrCodeInstance.update({ data: fullUrl });
+        }
+      }
+
+      window.onload = function () {
+        initQR();
+        updateStandee();
+      };
+    </script>
+  </body>
+</html>
