@@ -862,732 +862,734 @@
 
     <!-- Application Script Engine -->
     <script>
-      const SUPABASE_URL = "https://droxpyfhnkswaabsabk.supabase.co";
-      const SUPABASE_ANON_KEY =
-        "sb_publishable_UaxcoKKhZNGpoN9ZRKNIuw_u0PJbfxm"; // Paste your full key from Supabase here
-      const supabase = window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_ANON_KEY,
-      );
-      const SUPABASE_URL = "https://droxpyfhknkswaabsabk.supabase.co";
-      const SUPABASE_ANON_KEY =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyb3hweWZoa25rc3dhYWJzYWJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwNjgzNDIsImV4cCI6MjEwMzY0NDM0Mn0.bSawsQ0t6Cls4QjpTxhk6Mp80GFlFUg1lTqLk87fxuM"; // Paste your public anon key here
-      const supabaseClient = supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_ANON_KEY,
-      );
+            const SUPABASE_URL = "https://droxpyfhnkswaabsabk.supabase.co";
+            const SUPABASE_ANON_KEY =
+              "sb_publishable_UaxcoKKhZNGpoN9ZRKNIuw_u0PJbfxm"; // Paste your full key from Supabase here
+            const supabase = window.supabase.createClient(
+              SUPABASE_URL,
+              SUPABASE_ANON_KEY,
+            );
+            const SUPABASE_URL = "https://droxpyfhknkswaabsabk.supabase.co";
+            const SUPABASE_ANON_KEY =
+              "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyb3hweWZoa25rc3dhYWJzYWJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwNjgzNDIsImV4cCI6MjEwMzY0NDM0Mn0.bSawsQ0t6Cls4QjpTxhk6Mp80GFlFUg1lTqLk87fxuM"; // Paste your public anon key here
+            const supabaseClient = supabase.createClient(
+              SUPABASE_URL,
+              SUPABASE_ANON_KEY,
+            );
 
-      let currentOrdersData = [];
-      let dispatchGrouping = {};
-      let activeBuildings = [];
-      let activeMenuItems = [];
-      let allCustomers = [];
+            let currentOrdersData = [];
+            let dispatchGrouping = {};
+            let activeBuildings = [];
+            let activeMenuItems = [];
+            let allCustomers = [];
 
-      let countdownSec = 15;
-      let refreshIntervalTimer = null;
+            let countdownSec = 15;
+            let refreshIntervalTimer = null;
 
-      const campaignTemplates = {
-        daily_reminder:
-          "🔥 *Tastea Daily Snack Pass*\n\nToday's hot snack is live! Order before 12:30 PM for 3:30 PM delivery.\n\n👉 *Tap to Order:* https://tastea.in/foodpass",
-        special_discount:
-          "🎉 *Friday Crunch Special!*\n\nGet an extra discount on today's combo snack box for your team.\n\n👉 *Order Here:* https://tastea.in/foodpass",
-        birthday_treat:
-          "🎂 *Office Birthday Treat?*\n\nGet customized snack boxes with name stickers for 20+ packs at bulk pricing. Reply here!",
-        balance_due:
-          "🧾 *Tastea Snack Ledger Reminder*\n\nHi! You have a pending credit due on your office snack account. Kindly clear via UPI when convenient. Thank you!",
-      };
+            const campaignTemplates = {
+              daily_reminder:
+                "🔥 *Tastea Daily Snack Pass*\n\nToday's hot snack is live! Order before 12:30 PM for 3:30 PM delivery.\n\n👉 *Tap to Order:* https://tastea.in/foodpass",
+              special_discount:
+                "🎉 *Friday Crunch Special!*\n\nGet an extra discount on today's combo snack box for your team.\n\n👉 *Order Here:* https://tastea.in/foodpass",
+              birthday_treat:
+                "🎂 *Office Birthday Treat?*\n\nGet customized snack boxes with name stickers for 20+ packs at bulk pricing. Reply here!",
+              balance_due:
+                "🧾 *Tastea Snack Ledger Reminder*\n\nHi! You have a pending credit due on your office snack account. Kindly clear via UPI when convenient. Thank you!",
+            };
 
-      window.onload = async function () {
-        initTheme();
-        await fetchDashboardData();
-        await fetchMenuItems();
-        updateCampaignTemplate();
-        startAutoRefreshLoop();
-      };
+            window.onload = async function () {
+              initTheme();
+              await fetchDashboardData();
+              await fetchMenuItems();
+              updateCampaignTemplate();
+              startAutoRefreshLoop();
+            };
 
-      function initTheme() {
-        const savedTheme = localStorage.getItem("tastea_theme") || "dark";
-        if (savedTheme === "dark") {
-          document.documentElement.classList.add("dark");
-          document.getElementById("theme-icon").className =
-            "fa-solid fa-sun text-amber-400";
-        } else {
-          document.documentElement.classList.remove("dark");
-          document.getElementById("theme-icon").className =
-            "fa-solid fa-moon text-slate-700";
-        }
-      }
-
-      function toggleTheme() {
-        const isDark = document.documentElement.classList.contains("dark");
-        if (isDark) {
-          document.documentElement.classList.remove("dark");
-          localStorage.setItem("tastea_theme", "light");
-          document.getElementById("theme-icon").className =
-            "fa-solid fa-moon text-slate-700";
-        } else {
-          document.documentElement.classList.add("dark");
-          localStorage.setItem("tastea_theme", "dark");
-          document.getElementById("theme-icon").className =
-            "fa-solid fa-sun text-amber-400";
-        }
-      }
-
-      function startAutoRefreshLoop() {
-        if (refreshIntervalTimer) clearInterval(refreshIntervalTimer);
-        countdownSec = 15;
-        document.getElementById("sync-timer").innerText = `${countdownSec}s`;
-
-        refreshIntervalTimer = setInterval(async () => {
-          countdownSec--;
-          if (countdownSec <= 0) {
-            countdownSec = 15;
-            await fetchDashboardData();
-          }
-          document.getElementById("sync-timer").innerText = `${countdownSec}s`;
-        }, 1000);
-      }
-
-      async function manualSync() {
-        countdownSec = 15;
-        document.getElementById("sync-timer").innerText = `${countdownSec}s`;
-        await fetchDashboardData();
-        await fetchMenuItems();
-      }
-
-      function switchTab(tabId) {
-        ["ops", "menu", "buildings", "customers"].forEach((t) => {
-          document.getElementById(`tab-view-${t}`).classList.add("hidden");
-          document.getElementById(`tab-btn-${t}`).classList.remove("active");
-        });
-
-        document.getElementById(`tab-view-${tabId}`).classList.remove("hidden");
-        document.getElementById(`tab-btn-${tabId}`).classList.add("active");
-
-        if (tabId === "customers") fetchCustomersList();
-      }
-
-      async function fetchDashboardData() {
-        const { data: buildings } = await supabaseClient
-          .from("buildings")
-          .select("*")
-          .order("campus_name");
-        activeBuildings = buildings || [];
-        renderBuildingsList();
-        populateCampusDropdown();
-
-        const { data: orders, error } = await supabaseClient
-          .from("food_orders")
-          .select("*")
-          .order("created_at", { ascending: false });
-
-        if (error) {
-          console.error("Orders fetch error:", error);
-          return;
-        }
-
-        currentOrdersData = orders || [];
-        let totalVeg = 0;
-        let totalNonVeg = 0;
-        let totalReceived = 0;
-        let totalDue = 0;
-
-        dispatchGrouping = {};
-
-        const ordersTableBody = document.getElementById("orders-table-body");
-        ordersTableBody.innerHTML = "";
-
-        if (!orders || orders.length === 0) {
-          ordersTableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No orders placed today.</td></tr>`;
-        } else {
-          orders.forEach((order) => {
-            const amount = Number(order.total_price || 0);
-            const qty = Number(order.quantity || 1);
-            const isVeg = order.item_name.toLowerCase().includes("veg");
-
-            if (order.payment_status === "paid") totalReceived += amount;
-            else totalDue += amount;
-
-            if (isVeg) totalVeg += qty;
-            else totalNonVeg += qty;
-
-            const block = order.customer_block || "Main Wing";
-            const floor = order.customer_floor || "General";
-            const locKey = `${block} • ${floor}`;
-
-            if (!dispatchGrouping[locKey]) {
-              dispatchGrouping[locKey] = {
-                locKey,
-                block,
-                floor,
-                veg: 0,
-                nonveg: 0,
-                total: 0,
-                customers: [],
-              };
+            function initTheme() {
+              const savedTheme = localStorage.getItem("tastea_theme") || "dark";
+              if (savedTheme === "dark") {
+                document.documentElement.classList.add("dark");
+                document.getElementById("theme-icon").className =
+                  "fa-solid fa-sun text-amber-400";
+              } else {
+                document.documentElement.classList.remove("dark");
+                document.getElementById("theme-icon").className =
+                  "fa-solid fa-moon text-slate-700";
+              }
             }
 
-            if (isVeg) dispatchGrouping[locKey].veg += qty;
-            else dispatchGrouping[locKey].nonveg += qty;
-            dispatchGrouping[locKey].total += qty;
+            function toggleTheme() {
+              const isDark = document.documentElement.classList.contains("dark");
+              if (isDark) {
+                document.documentElement.classList.remove("dark");
+                localStorage.setItem("tastea_theme", "light");
+                document.getElementById("theme-icon").className =
+                  "fa-solid fa-moon text-slate-700";
+              } else {
+                document.documentElement.classList.add("dark");
+                localStorage.setItem("tastea_theme", "dark");
+                document.getElementById("theme-icon").className =
+                  "fa-solid fa-sun text-amber-400";
+              }
+            }
 
-            dispatchGrouping[locKey].customers.push({
-              name: order.user_name || "Staff",
-              phone: order.user_phone,
-              item: order.item_name,
-              qty: qty,
-              price: amount,
-              paid: order.payment_status === "paid",
-            });
+            function startAutoRefreshLoop() {
+              if (refreshIntervalTimer) clearInterval(refreshIntervalTimer);
+              countdownSec = 15;
+              document.getElementById("sync-timer").innerText = `${countdownSec}s`;
 
-            const isPaid = order.payment_status === "paid";
-            const actionBtn = isPaid
-              ? `<span class="bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-700/50 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase"><i class="fa-solid fa-check"></i> Paid</span>`
-              : `<button onclick="markAsPaid('${order.id}')" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-900 px-3 py-1 rounded-lg text-[10px] font-black shadow transition">Mark Paid</button>`;
+              refreshIntervalTimer = setInterval(async () => {
+                countdownSec--;
+                if (countdownSec <= 0) {
+                  countdownSec = 15;
+                  await fetchDashboardData();
+                }
+                document.getElementById("sync-timer").innerText = `${countdownSec}s`;
+              }, 1000);
+            }
 
-            ordersTableBody.innerHTML += `
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition border-b border-slate-200 dark:border-slate-800/40">
-                            <td class="py-3 px-4">
-                                <span class="font-bold text-slate-900 dark:text-white">${order.user_name || "Staff"}</span><br>
-                                <span class="text-[11px] text-slate-500 dark:text-slate-400 font-mono">${order.user_phone}</span>
-                            </td>
-                            <td class="py-3 px-4">
-                                <span class="text-slate-800 dark:text-slate-200">${order.item_name}</span><br>
-                                <span class="text-[10px] text-amber-700 dark:text-amber-300 font-bold bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800/40">📍 ${locKey}</span>
-                            </td>
-                            <td class="py-3 px-4 text-center font-bold text-amber-600 dark:text-amber-400">${order.quantity}</td>
-                            <td class="py-3 px-4 text-right font-black text-slate-900 dark:text-white">₹${order.total_price}</td>
-                            <td class="py-3 px-4 text-right">${actionBtn}</td>
-                        </tr>
-                    `;
-          });
-        }
+            async function manualSync() {
+              countdownSec = 15;
+              document.getElementById("sync-timer").innerText = `${countdownSec}s`;
+              await fetchDashboardData();
+              await fetchMenuItems();
+            }
 
-        const dispatchTableBody = document.getElementById(
-          "dispatch-table-body",
-        );
-        dispatchTableBody.innerHTML = "";
+            function switchTab(tabId) {
+              ["ops", "menu", "buildings", "customers"].forEach((t) => {
+                document.getElementById(`tab-view-${t}`).classList.add("hidden");
+                document.getElementById(`tab-btn-${t}`).classList.remove("active");
+              });
 
-        if (Object.keys(dispatchGrouping).length === 0) {
-          dispatchTableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No delivery bags required yet.</td></tr>`;
-        } else {
-          Object.values(dispatchGrouping).forEach((group) => {
-            dispatchTableBody.innerHTML += `
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition border-b border-slate-200 dark:border-slate-800/40">
-                            <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">🏢 ${group.locKey}</td>
-                            <td class="py-3 px-4 text-center font-bold text-emerald-600 dark:text-emerald-400">${group.veg}</td>
-                            <td class="py-3 px-4 text-center font-bold text-rose-600 dark:text-rose-400">${group.nonveg}</td>
-                            <td class="py-3 px-4 text-center font-black text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-950/60">${group.total} Boxes</td>
-                            <td class="py-3 px-4 text-right">
-                                <span class="bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-700/50 px-2 py-0.5 rounded text-[10px] font-bold">Ready</span>
-                            </td>
-                        </tr>
-                    `;
-          });
-        }
+              document.getElementById(`tab-view-${tabId}`).classList.remove("hidden");
+              document.getElementById(`tab-btn-${tabId}`).classList.add("active");
 
-        document.getElementById("total-veg-qty").innerText = totalVeg;
-        document.getElementById("total-nonveg-qty").innerText = totalNonVeg;
-        document.getElementById("total-received").innerText =
-          `₹${totalReceived}`;
-        document.getElementById("total-due").innerText = `₹${totalDue}`;
-      }
+              if (tabId === "customers") fetchCustomersList();
+            }
 
-      async function markAsPaid(orderId) {
-        const { error } = await supabaseClient
-          .from("food_orders")
-          .update({ payment_status: "paid" })
-          .eq("id", orderId);
-        if (!error) fetchDashboardData();
-      }
+            async function fetchDashboardData() {
+              const { data: buildings } = await supabaseClient
+                .from("buildings")
+                .select("*")
+                .order("campus_name");
+              activeBuildings = buildings || [];
+              renderBuildingsList();
+              populateCampusDropdown();
 
-      function filterOrdersTable() {
-        const val = document
-          .getElementById("order-search-input")
-          .value.toLowerCase();
-        const rows = document.querySelectorAll("#orders-table-body tr");
-        rows.forEach((r) => {
-          r.style.display = r.innerText.toLowerCase().includes(val)
-            ? ""
-            : "none";
-        });
-      }
+              const { data: orders, error } = await supabaseClient
+                .from("food_orders")
+                .select("*")
+                .order("created_at", { ascending: false });
 
-      async function fetchMenuItems() {
-        const { data: items } = await supabaseClient
-          .from("menu_items")
-          .select("*")
-          .order("created_at", { ascending: false });
-        activeMenuItems = items || [];
-        renderMenuList();
-      }
+              if (error) {
+                console.error("Orders fetch error:", error);
+                return;
+              }
 
-      function populateCampusDropdown() {
-        const sel = document.getElementById("menu-target-building");
-        sel.innerHTML = `<option value="">🌐 All Campuses (Default Catalog)</option>`;
-        activeBuildings.forEach((b) => {
-          sel.innerHTML += `<option value="${b.id}">🏢 ${b.campus_name}</option>`;
-        });
-      }
+              currentOrdersData = orders || [];
+              let totalVeg = 0;
+              let totalNonVeg = 0;
+              let totalReceived = 0;
+              let totalDue = 0;
 
-      function calculateFinalPrice() {
-        const base = Number(
-          document.getElementById("menu-base-price").value || 0,
-        );
-        const disc = Number(
-          document.getElementById("menu-discount").value || 0,
-        );
-        const final = Math.round(base - (base * disc) / 100);
-        document.getElementById("preview-final-price").innerText = `₹${final}`;
-      }
+              dispatchGrouping = {};
 
-      function renderMenuList() {
-        const tbody = document.getElementById("menu-list-body");
-        tbody.innerHTML = "";
+              const ordersTableBody = document.getElementById("orders-table-body");
+              ordersTableBody.innerHTML = "";
 
-        if (activeMenuItems.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No snacks in catalog. Add items on the left.</td></tr>`;
-          return;
-        }
+              if (!orders || orders.length === 0) {
+                ordersTableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No orders placed today.</td></tr>`;
+              } else {
+                orders.forEach((order) => {
+                  const amount = Number(order.total_price || 0);
+                  const qty = Number(order.quantity || 1);
+                  const isVeg = order.item_name.toLowerCase().includes("veg");
 
-        activeMenuItems.forEach((item) => {
-          const isVeg = item.category_type === "veg";
-          const catBadge = isVeg
-            ? `<span class="text-emerald-600 dark:text-emerald-400 font-bold">🟢 Veg</span>`
-            : `<span class="text-rose-600 dark:text-rose-400 font-bold">🔴 Non-Veg</span>`;
-          const campusName = item.building_id
-            ? activeBuildings.find((b) => b.id === item.building_id)
-                ?.campus_name || "Custom"
-            : "🌐 All";
+                  if (order.payment_status === "paid") totalReceived += amount;
+                  else totalDue += amount;
 
-          const isActive = item.is_active_today;
-          const toggleBtn = isActive
-            ? `<button onclick="toggleActiveStatus('${item.id}', false, '${item.category_type}', '${item.building_id || ""}')" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-3 py-1.5 rounded-full text-[10px] shadow active:scale-95 flex items-center gap-1 mx-auto"><i class="fa-solid fa-check"></i> Active Today</button>`
-            : `<button onclick="toggleActiveStatus('${item.id}', true, '${item.category_type}', '${item.building_id || ""}')" class="bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-emerald-500 font-bold px-3 py-1.5 rounded-full text-[10px] border border-slate-300 dark:border-slate-700 hover:border-emerald-500 transition active:scale-95 mx-auto">Set Active</button>`;
+                  if (isVeg) totalVeg += qty;
+                  else totalNonVeg += qty;
 
-          tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition border-b border-slate-200 dark:border-slate-800/40 ${isActive ? "bg-emerald-500/5" : ""}">
-                        <td class="py-3 px-4 text-center">${toggleBtn}</td>
-                        <td class="py-3 px-4">${catBadge} • <span class="font-bold text-slate-900 dark:text-white">${item.item_name}</span> <span class="text-[10px] text-slate-500 dark:text-slate-400">(${item.portion_badge})</span></td>
-                        <td class="py-3 px-4 text-slate-500 dark:text-slate-400">${campusName}</td>
-                        <td class="py-3 px-4 text-center font-black text-slate-900 dark:text-white">₹${item.final_price || Math.round(item.base_price - (item.base_price * item.discount_pct) / 100)}</td>
-                        <td class="py-3 px-4 text-right space-x-1 whitespace-nowrap">
-                            <button onclick="startEditMenuItem('${item.id}')" class="bg-purple-100 hover:bg-purple-200 dark:bg-purple-950/80 dark:hover:bg-purple-900 border border-purple-300 dark:border-purple-700/60 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-lg text-[10px] font-bold">Edit</button>
-                            <button onclick="deleteMenuItem('${item.id}', '${item.item_name.replace(/'/g, "\\'")}')" class="bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/80 dark:hover:bg-rose-900 border border-rose-300 dark:border-rose-700/60 text-rose-700 dark:text-rose-300 px-2 py-1 rounded-lg text-[10px] font-bold">Delete</button>
-                        </td>
-                    </tr>
-                `;
-        });
-      }
+                  const block = order.customer_block || "Main Wing";
+                  const floor = order.customer_floor || "General";
+                  const locKey = `${block} • ${floor}`;
 
-      async function toggleActiveStatus(
-        itemId,
-        newStatus,
-        categoryType,
-        buildingId,
-      ) {
-        if (newStatus === true) {
-          let deactivationQuery = supabaseClient
-            .from("menu_items")
-            .update({ is_active_today: false })
-            .eq("category_type", categoryType);
+                  if (!dispatchGrouping[locKey]) {
+                    dispatchGrouping[locKey] = {
+                      locKey,
+                      block,
+                      floor,
+                      veg: 0,
+                      nonveg: 0,
+                      total: 0,
+                      customers: [],
+                    };
+                  }
 
-          if (buildingId) {
-            deactivationQuery = deactivationQuery.eq("building_id", buildingId);
-          } else {
-            deactivationQuery = deactivationQuery.is("building_id", null);
+                  if (isVeg) dispatchGrouping[locKey].veg += qty;
+                  else dispatchGrouping[locKey].nonveg += qty;
+                  dispatchGrouping[locKey].total += qty;
+
+                  dispatchGrouping[locKey].customers.push({
+                    name: order.user_name || "Staff",
+                    phone: order.user_phone,
+                    item: order.item_name,
+                    qty: qty,
+                    price: amount,
+                    paid: order.payment_status === "paid",
+                  });
+
+                  const isPaid = order.payment_status === "paid";
+                  const actionBtn = isPaid
+                    ? `<span class="bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-700/50 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase"><i class="fa-solid fa-check"></i> Paid</span>`
+                    : `<button onclick="markAsPaid('${order.id}')" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-900 px-3 py-1 rounded-lg text-[10px] font-black shadow transition">Mark Paid</button>`;
+
+                  ordersTableBody.innerHTML += `
+                              <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition border-b border-slate-200 dark:border-slate-800/40">
+                                  <td class="py-3 px-4">
+                                      <span class="font-bold text-slate-900 dark:text-white">${order.user_name || "Staff"}</span><br>
+                                      <span class="text-[11px] text-slate-500 dark:text-slate-400 font-mono">${order.user_phone}</span>
+                                  </td>
+                                  <td class="py-3 px-4">
+                                      <span class="text-slate-800 dark:text-slate-200">${order.item_name}</span><br>
+                                      <span class="text-[10px] text-amber-700 dark:text-amber-300 font-bold bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800/40">📍 ${locKey}</span>
+                                  </td>
+                                  <td class="py-3 px-4 text-center font-bold text-amber-600 dark:text-amber-400">${order.quantity}</td>
+                                  <td class="py-3 px-4 text-right font-black text-slate-900 dark:text-white">₹${order.total_price}</td>
+                                  <td class="py-3 px-4 text-right">${actionBtn}</td>
+                              </tr>
+                          `;
+                });
+              }
+
+              const dispatchTableBody = document.getElementById(
+                "dispatch-table-body",
+              );
+              dispatchTableBody.innerHTML = "";
+
+              if (Object.keys(dispatchGrouping).length === 0) {
+                dispatchTableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No delivery bags required yet.</td></tr>`;
+              } else {
+                Object.values(dispatchGrouping).forEach((group) => {
+                  dispatchTableBody.innerHTML += `
+                              <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition border-b border-slate-200 dark:border-slate-800/40">
+                                  <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">🏢 ${group.locKey}</td>
+                                  <td class="py-3 px-4 text-center font-bold text-emerald-600 dark:text-emerald-400">${group.veg}</td>
+                                  <td class="py-3 px-4 text-center font-bold text-rose-600 dark:text-rose-400">${group.nonveg}</td>
+                                  <td class="py-3 px-4 text-center font-black text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-950/60">${group.total} Boxes</td>
+                                  <td class="py-3 px-4 text-right">
+                                      <span class="bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-700/50 px-2 py-0.5 rounded text-[10px] font-bold">Ready</span>
+                                  </td>
+                              </tr>
+                          `;
+                });
+              }
+
+              document.getElementById("total-veg-qty").innerText = totalVeg;
+              document.getElementById("total-nonveg-qty").innerText = totalNonVeg;
+              document.getElementById("total-received").innerText =
+                `₹${totalReceived}`;
+              document.getElementById("total-due").innerText = `₹${totalDue}`;
+            }
+
+            async function markAsPaid(orderId) {
+              const { error } = await supabaseClient
+                .from("food_orders")
+                .update({ payment_status: "paid" })
+                .eq("id", orderId);
+              if (!error) fetchDashboardData();
+            }
+
+            function filterOrdersTable() {
+              const val = document
+                .getElementById("order-search-input")
+                .value.toLowerCase();
+              const rows = document.querySelectorAll("#orders-table-body tr");
+              rows.forEach((r) => {
+                r.style.display = r.innerText.toLowerCase().includes(val)
+                  ? ""
+                  : "none";
+              });
+            }
+
+            async function fetchMenuItems() {
+              const { data: items } = await supabaseClient
+                .from("menu_items")
+                .select("*")
+                .order("created_at", { ascending: false });
+              activeMenuItems = items || [];
+              renderMenuList();
+            }
+
+            function populateCampusDropdown() {
+              const sel = document.getElementById("menu-target-building");
+              sel.innerHTML = `<option value="">🌐 All Campuses (Default Catalog)</option>`;
+              activeBuildings.forEach((b) => {
+                sel.innerHTML += `<option value="${b.id}">🏢 ${b.campus_name}</option>`;
+              });
+            }
+
+            function calculateFinalPrice() {
+              const base = Number(
+                document.getElementById("menu-base-price").value || 0,
+              );
+              const disc = Number(
+                document.getElementById("menu-discount").value || 0,
+              );
+              const final = Math.round(base - (base * disc) / 100);
+              document.getElementById("preview-final-price").innerText = `₹${final}`;
+            }
+
+            function renderMenuList() {
+              const tbody = document.getElementById("menu-list-body");
+              tbody.innerHTML = "";
+
+              if (activeMenuItems.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No snacks in catalog. Add items on the left.</td></tr>`;
+                return;
+              }
+
+              activeMenuItems.forEach((item) => {
+                const isVeg = item.category_type === "veg";
+                const catBadge = isVeg
+                  ? `<span class="text-emerald-600 dark:text-emerald-400 font-bold">🟢 Veg</span>`
+                  : `<span class="text-rose-600 dark:text-rose-400 font-bold">🔴 Non-Veg</span>`;
+                const campusName = item.building_id
+                  ? activeBuildings.find((b) => b.id === item.building_id)
+                      ?.campus_name || "Custom"
+                  : "🌐 All";
+
+                const isActive = item.is_active_today;
+                const toggleBtn = isActive
+                  ? `<button onclick="toggleActiveStatus('${item.id}', false, '${item.category_type}', '${item.building_id || ""}')" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-3 py-1.5 rounded-full text-[10px] shadow active:scale-95 flex items-center gap-1 mx-auto"><i class="fa-solid fa-check"></i> Active Today</button>`
+                  : `<button onclick="toggleActiveStatus('${item.id}', true, '${item.category_type}', '${item.building_id || ""}')" class="bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-emerald-500 font-bold px-3 py-1.5 rounded-full text-[10px] border border-slate-300 dark:border-slate-700 hover:border-emerald-500 transition active:scale-95 mx-auto">Set Active</button>`;
+
+                tbody.innerHTML += `
+                          <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition border-b border-slate-200 dark:border-slate-800/40 ${isActive ? "bg-emerald-500/5" : ""}">
+                              <td class="py-3 px-4 text-center">${toggleBtn}</td>
+                              <td class="py-3 px-4">${catBadge} • <span class="font-bold text-slate-900 dark:text-white">${item.item_name}</span> <span class="text-[10px] text-slate-500 dark:text-slate-400">(${item.portion_badge})</span></td>
+                              <td class="py-3 px-4 text-slate-500 dark:text-slate-400">${campusName}</td>
+                              <td class="py-3 px-4 text-center font-black text-slate-900 dark:text-white">₹${item.final_price || Math.round(item.base_price - (item.base_price * item.discount_pct) / 100)}</td>
+                              <td class="py-3 px-4 text-right space-x-1 whitespace-nowrap">
+                                  <button onclick="startEditMenuItem('${item.id}')" class="bg-purple-100 hover:bg-purple-200 dark:bg-purple-950/80 dark:hover:bg-purple-900 border border-purple-300 dark:border-purple-700/60 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-lg text-[10px] font-bold">Edit</button>
+                                  <button onclick="deleteMenuItem('${item.id}', '${item.item_name.replace(/'/g, "\\'")}')" class="bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/80 dark:hover:bg-rose-900 border border-rose-300 dark:border-rose-700/60 text-rose-700 dark:text-rose-300 px-2 py-1 rounded-lg text-[10px] font-bold">Delete</button>
+                              </td>
+                          </tr>
+                      `;
+              });
+            }
+
+            async function toggleActiveStatus(
+              itemId,
+              newStatus,
+              categoryType,
+              buildingId,
+            ) {
+              if (newStatus === true) {
+                let deactivationQuery = supabaseClient
+                  .from("menu_items")
+                  .update({ is_active_today: false })
+                  .eq("category_type", categoryType);
+
+                if (buildingId) {
+                  deactivationQuery = deactivationQuery.eq("building_id", buildingId);
+                } else {
+                  deactivationQuery = deactivationQuery.is("building_id", null);
+                }
+
+                await deactivationQuery;
+              }
+
+              const { error } = await supabaseClient
+                .from("menu_items")
+                .update({ is_active_today: newStatus })
+                .eq("id", itemId);
+
+              if (error) {
+                alert("Failed to update status: " + error.message);
+                return;
+              }
+
+              await fetchMenuItems();
+            }
+
+            function startEditMenuItem(itemId) {
+              const item = activeMenuItems.find((i) => i.id === itemId);
+              if (!item) return;
+
+              document.getElementById("edit-menu-id").value = item.id;
+              document.getElementById("menu-target-building").value =
+                item.building_id || "";
+              document.getElementById("menu-category").value = item.category_type;
+              document.getElementById("menu-name").value = item.item_name;
+              document.getElementById("menu-badge").value =
+                item.portion_badge || "Pack of 2 Pcs";
+              document.getElementById("menu-base-price").value = item.base_price;
+              document.getElementById("menu-discount").value = item.discount_pct;
+              document.getElementById("menu-image").value = item.image_url || "";
+
+              calculateFinalPrice();
+              document.getElementById("menu-form-title").innerText =
+                `✏️ Edit: ${item.item_name}`;
+              document.getElementById("save-menu-btn").innerText =
+                "Update Snack Item";
+              document
+                .getElementById("cancel-menu-edit-btn")
+                .classList.remove("hidden");
+            }
+
+            function resetMenuForm() {
+              document.getElementById("edit-menu-id").value = "";
+              document.getElementById("menu-name").value = "";
+              document.getElementById("menu-base-price").value = "";
+              document.getElementById("menu-discount").value = "40";
+              document.getElementById("preview-final-price").innerText = "₹0";
+              document.getElementById("menu-form-title").innerText =
+                "+ Add Snack to Catalog";
+              document.getElementById("save-menu-btn").innerText =
+                "Save Item to Catalog";
+              document.getElementById("cancel-menu-edit-btn").classList.add("hidden");
+            }
+
+            async function saveMenuItemHandler() {
+              const editId = document.getElementById("edit-menu-id").value;
+              const targetBuilding =
+                document.getElementById("menu-target-building").value || null;
+              const category = document.getElementById("menu-category").value;
+              const name = document.getElementById("menu-name").value.trim();
+              const badge = document.getElementById("menu-badge").value.trim();
+              const basePrice = parseFloat(
+                document.getElementById("menu-base-price").value,
+              );
+              const discount = parseInt(
+                document.getElementById("menu-discount").value || 0,
+              );
+              const image = document.getElementById("menu-image").value.trim();
+
+              if (!name || isNaN(basePrice)) {
+                alert("Enter Item Name and Base Price.");
+                return;
+              }
+
+              const payload = {
+                building_id: targetBuilding,
+                category_type: category,
+                item_name: name,
+                portion_badge: badge,
+                base_price: basePrice,
+                discount_pct: discount,
+                image_url: image,
+              };
+
+              const res = editId
+                ? await supabaseClient
+                    .from("menu_items")
+                    .update(payload)
+                    .eq("id", editId)
+                : await supabaseClient.from("menu_items").insert([payload]);
+
+              if (res.error) {
+                alert("Error: " + res.error.message);
+                return;
+              }
+
+              resetMenuForm();
+              await fetchMenuItems();
+            }
+
+            async function deleteMenuItem(itemId, itemName) {
+              if (!confirm(`Delete "${itemName}" from catalog?`)) return;
+              await supabaseClient.from("menu_items").delete().eq("id", itemId);
+              await fetchMenuItems();
+            }
+
+            function renderBuildingsList() {
+              const tbody = document.getElementById("buildings-list-body");
+              tbody.innerHTML = "";
+
+              if (activeBuildings.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-slate-500">No campuses registered.</td></tr>`;
+                return;
+              }
+
+              activeBuildings.forEach((b) => {
+                const safeName = b.campus_name.replace(/'/g, "\\'");
+                tbody.innerHTML += `
+                          <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition border-b border-slate-200 dark:border-slate-800/40">
+                              <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">${b.campus_name}</td>
+                              <td class="py-3 px-4 text-amber-600 dark:text-amber-300 font-mono">${b.qr_code_slug}</td>
+                              <td class="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
+                                  <button onclick="printStandee('${safeName}', '${b.qr_code_slug}', '${b.cutoff_slot || ""}', '${b.delivery_slot || ""}')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white px-2 py-1 rounded-lg text-[10px] font-bold">Print QR</button>
+                                  <button onclick="startEditBuilding('${b.id}')" class="bg-blue-100 hover:bg-blue-200 dark:bg-blue-950/80 dark:hover:bg-blue-900 border border-blue-300 dark:border-blue-700/60 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-lg text-[10px] font-bold">Edit</button>
+                                  <button onclick="deleteBuilding('${b.id}', '${safeName}')" class="bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/80 dark:hover:bg-rose-900 border border-rose-300 dark:border-rose-700/60 text-rose-700 dark:text-rose-300 px-2 py-1 rounded-lg text-[10px] font-bold">Delete</button>
+                              </td>
+                          </tr>
+                      `;
+              });
+            }
+
+            function startEditBuilding(buildingId) {
+              const b = activeBuildings.find((item) => item.id === buildingId);
+              if (!b) return;
+
+              document.getElementById("edit-building-id").value = b.id;
+              document.getElementById("new-campus-name").value = b.campus_name;
+              document.getElementById("new-qr-slug").value = b.qr_code_slug;
+              document.getElementById("new-cutoff").value =
+                b.cutoff_slot || "12:00 PM - 12:30 PM";
+              document.getElementById("new-delivery").value =
+                b.delivery_slot || "03:30 PM - 04:00 PM";
+
+              document.getElementById("building-form-title").innerText =
+                `✏️ Edit: ${b.campus_name}`;
+              document.getElementById("save-building-btn").innerText =
+                "Update Campus Details";
+              document.getElementById("cancel-edit-btn").classList.remove("hidden");
+            }
+
+            function resetBuildingForm() {
+              document.getElementById("edit-building-id").value = "";
+              document.getElementById("new-campus-name").value = "";
+              document.getElementById("new-qr-slug").value = "";
+              document.getElementById("building-form-title").innerText =
+                "+ Register Location";
+              document.getElementById("save-building-btn").innerText =
+                "Save Campus & Generate QR";
+              document.getElementById("cancel-edit-btn").classList.add("hidden");
+            }
+
+            async function saveBuildingHandler() {
+              const editId = document.getElementById("edit-building-id").value;
+              const name = document.getElementById("new-campus-name").value.trim();
+              const slug = document
+                .getElementById("new-qr-slug")
+                .value.trim()
+                .toLowerCase()
+                .replace(/\s+/g, "-");
+              const cutoff = document.getElementById("new-cutoff").value.trim();
+              const delivery = document.getElementById("new-delivery").value.trim();
+
+              if (!name || !slug) {
+                alert("Enter Campus Name and QR Slug.");
+                return;
+              }
+
+              const payload = {
+                campus_name: name,
+                qr_code_slug: slug,
+                cutoff_slot: cutoff,
+                delivery_slot: delivery,
+              };
+              const res = editId
+                ? await supabaseClient
+                    .from("buildings")
+                    .update(payload)
+                    .eq("id", editId)
+                : await supabaseClient.from("buildings").insert([payload]);
+
+              if (res.error) {
+                alert("Error: " + res.error.message);
+                return;
+              }
+
+              resetBuildingForm();
+              await fetchDashboardData();
+            }
+
+            async function deleteBuilding(buildingId, campusName) {
+              if (!confirm(`Delete "${campusName}"?`)) return;
+              await supabaseClient.from("buildings").delete().eq("id", buildingId);
+              await fetchDashboardData();
+            }
+
+            function printStandee(name, slug, cutoff, delivery) {
+              const container = document.getElementById("printable-section");
+              container.innerHTML = `
+                      <div class="flex flex-col items-center justify-center min-h-screen text-center p-8">
+                          <div class="w-[360px] border-4 border-emerald-700 rounded-3xl p-6 space-y-4 shadow-xl">
+                              <div class="bg-emerald-700 text-white py-1.5 px-4 rounded-full font-black text-sm tracking-wider uppercase inline-block">TASTEA FOOD PASS</div>
+                              <h2 class="text-xl font-black text-slate-900">${name}</h2>
+                              <div id="standee-qr-target" class="flex justify-center p-2 bg-slate-50 rounded-2xl border-2 border-dashed border-emerald-600"></div>
+                              <p class="text-xs font-black text-slate-800">📸 SCAN TO ORDER TODAY'S FRESH SNACKS</p>
+                              <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 text-xs text-emerald-950 font-semibold space-y-0.5">
+                                  <p>⏱️ Cut-Off: ${cutoff}</p>
+                                  <p>🚚 Delivery: ${delivery}</p>
+                              </div>
+                              <p class="text-[10px] text-slate-400 uppercase font-bold">Insulated Desk & Staff Room Delivery</p>
+                          </div>
+                      </div>
+                  `;
+
+              const origin =
+                window.location.origin +
+                window.location.pathname.replace("admin.html", "index.html");
+              const qr = new QRCodeStyling({
+                width: 200,
+                height: 200,
+                data: `${origin}?b=${slug}`,
+                dotsOptions: { color: "#047857", type: "rounded" },
+                cornersSquareOptions: { color: "#065f46", type: "extra-rounded" },
+              });
+
+              qr.append(document.getElementById("standee-qr-target"));
+              setTimeout(() => {
+                window.print();
+              }, 500);
+            }
+
+            function printManifest() {
+              const container = document.getElementById("printable-section");
+              container.innerHTML = `
+                      <div class="text-center border-b pb-3 mb-4">
+                          <h1 class="text-2xl font-black tracking-wider">TASTEA FOOD PASS</h1>
+                          <p class="text-xs text-gray-600">Daily Kitchen Packing & Drop Manifest</p>
+                      </div>
+                  `;
+
+              Object.values(dispatchGrouping).forEach((group) => {
+                let customerListHTML = group.customers
+                  .map(
+                    (c, i) => `
+                          <tr class="border-b text-xs">
+                              <td class="py-1 font-bold">${i + 1}. ${c.name}</td>
+                              <td class="py-1">${c.item}</td>
+                              <td class="py-1 text-center font-bold">${c.qty}</td>
+                              <td class="py-1 text-right font-bold ${c.paid ? "text-green-700" : "text-red-600"}">${c.paid ? "PAID" : "DUE: ₹" + c.price}</td>
+                          </tr>
+                      `,
+                  )
+                  .join("");
+
+                container.innerHTML += `
+                          <div class="border-2 border-dashed border-black p-4 rounded-xl space-y-3 break-inside-avoid mb-6">
+                              <div class="flex justify-between items-center border-b pb-2">
+                                  <div>
+                                      <h3 class="text-lg font-black uppercase">📦 BAG DROP: ${group.locKey}</h3>
+                                      <p class="text-xs text-gray-600">Insulated Pack</p>
+                                  </div>
+                                  <div class="text-right">
+                                      <span class="text-xs font-bold bg-gray-200 px-2 py-1 rounded">Total: ${group.total} Boxes</span>
+                                      <p class="text-[10px] text-gray-500 mt-1">Veg: ${group.veg} | Non-Veg: ${group.nonveg}</p>
+                                  </div>
+                              </div>
+                              <table class="w-full text-left">
+                                  <thead>
+                                      <tr class="text-[10px] uppercase border-b font-bold text-gray-500">
+                                          <th class="py-1">Staff Name</th>
+                                          <th class="py-1">Item</th>
+                                          <th class="py-1 text-center">Qty</th>
+                                          <th class="py-1 text-right">Payment</th>
+                                      </tr>
+                                  </thead>
+                                  <tbody>${customerListHTML}</tbody>
+                              </table>
+                          </div>
+                      `;
+              });
+
+              window.print();
+            }
+
+            function updateCampaignTemplate() {
+              const selected = document.getElementById(
+                "campaign-template-select",
+              ).value;
+              document.getElementById("campaign-message-text").value =
+                campaignTemplates[selected];
+            }
+            async function fetchAdminOrders() {
+          const { data: orders, error } = await supabase
+              .from('orders')
+              .select('*')
+              .order('created_at', { ascending: false });
+
+          if (error) {
+              console.error('Error fetching orders:', error);
+              return;
           }
 
-          await deactivationQuery;
-        }
+          console.log('Live orders fetched:', orders);
+          // Call your UI render function here if you have one, e.g., renderOrders(orders);
+      }      }
+            async function fetchCustomersList() {
+              const { data: customers } = await supabaseClient
+                .from("customers")
+                .select("*")
+                .order("last_ordered_at", { ascending: false });
+              allCustomers = customers || [];
+              document.getElementById("customer-total-count").innerText =
+                `${allCustomers.length} Profiles`;
 
-        const { error } = await supabaseClient
-          .from("menu_items")
-          .update({ is_active_today: newStatus })
-          .eq("id", itemId);
+              const tbody = document.getElementById("campaign-customer-table");
+              tbody.innerHTML = "";
 
-        if (error) {
-          alert("Failed to update status: " + error.message);
-          return;
-        }
+              if (allCustomers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">No customers registered yet.</td></tr>`;
+                return;
+              }
 
-        await fetchMenuItems();
-      }
+              allCustomers.forEach((c) => {
+                const dropPoint = `${c.saved_block || "Main"} • ${c.saved_floor || "General"}`;
+                const msg = encodeURIComponent(
+                  document.getElementById("campaign-message-text").value,
+                );
+                const limit = c.credit_limit || 500;
 
-      function startEditMenuItem(itemId) {
-        const item = activeMenuItems.find((i) => i.id === itemId);
-        if (!item) return;
+                tbody.innerHTML += `
+                          <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition border-b border-slate-200 dark:border-slate-800/40">
+                              <td class="py-3 px-4">
+                                  <span class="font-bold text-slate-900 dark:text-white">${c.full_name}</span><br>
+                                  <span class="text-slate-500 dark:text-slate-400 font-mono text-[11px]">${c.phone}</span>
+                              </td>
+                              <td class="py-3 px-4 text-amber-600 dark:text-amber-300 font-semibold">${dropPoint}</td>
+                              <td class="py-3 px-4 text-center font-bold text-slate-700 dark:text-slate-200">${c.total_orders_count || 1}</td>
+                              <td class="py-3 px-4 text-center">
+                                  <input type="number" value="${limit}" onchange="updateCustomerLimit('${c.id}', this.value)" class="w-20 bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-center font-bold text-xs text-slate-900 dark:text-white focus:outline-emerald-500" title="Edit Employee Credit Limit">
+                              </td>
+                              <td class="py-3 px-4 text-right font-black text-emerald-600 dark:text-emerald-400">₹${c.total_spend_amount || 0}</td>
+                              <td class="py-3 px-4 text-right">
+                                  <a href="https://wa.me/91${c.phone}?text=${msg}" target="_blank" class="bg-green-600 hover:bg-green-500 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold inline-flex items-center gap-1">
+                                      <i class="fa-brands fa-whatsapp"></i> Chat
+                                  </a>
+                              </td>
+                          </tr>
+                      `;
+              });
+            }
 
-        document.getElementById("edit-menu-id").value = item.id;
-        document.getElementById("menu-target-building").value =
-          item.building_id || "";
-        document.getElementById("menu-category").value = item.category_type;
-        document.getElementById("menu-name").value = item.item_name;
-        document.getElementById("menu-badge").value =
-          item.portion_badge || "Pack of 2 Pcs";
-        document.getElementById("menu-base-price").value = item.base_price;
-        document.getElementById("menu-discount").value = item.discount_pct;
-        document.getElementById("menu-image").value = item.image_url || "";
+            async function updateCustomerLimit(customerId, newLimit) {
+              const { error } = await supabaseClient
+                .from("customers")
+                .update({ credit_limit: parseFloat(newLimit) })
+                .eq("id", customerId);
 
-        calculateFinalPrice();
-        document.getElementById("menu-form-title").innerText =
-          `✏️ Edit: ${item.item_name}`;
-        document.getElementById("save-menu-btn").innerText =
-          "Update Snack Item";
-        document
-          .getElementById("cancel-menu-edit-btn")
-          .classList.remove("hidden");
-      }
+              if (error) alert("Failed to update credit limit: " + error.message);
+              else alert("✅ Employee credit limit updated to ₹" + newLimit);
+            }
 
-      function resetMenuForm() {
-        document.getElementById("edit-menu-id").value = "";
-        document.getElementById("menu-name").value = "";
-        document.getElementById("menu-base-price").value = "";
-        document.getElementById("menu-discount").value = "40";
-        document.getElementById("preview-final-price").innerText = "₹0";
-        document.getElementById("menu-form-title").innerText =
-          "+ Add Snack to Catalog";
-        document.getElementById("save-menu-btn").innerText =
-          "Save Item to Catalog";
-        document.getElementById("cancel-menu-edit-btn").classList.add("hidden");
-      }
+            function copyBroadcastNumbers() {
+              if (allCustomers.length === 0) {
+                alert("No numbers available.");
+                return;
+              }
+              const numbers = allCustomers.map((c) => `+91${c.phone}`).join("\n");
+              navigator.clipboard.writeText(numbers);
+              alert(`✅ Copied ${allCustomers.length} numbers to clipboard!`);
+            }
 
-      async function saveMenuItemHandler() {
-        const editId = document.getElementById("edit-menu-id").value;
-        const targetBuilding =
-          document.getElementById("menu-target-building").value || null;
-        const category = document.getElementById("menu-category").value;
-        const name = document.getElementById("menu-name").value.trim();
-        const badge = document.getElementById("menu-badge").value.trim();
-        const basePrice = parseFloat(
-          document.getElementById("menu-base-price").value,
-        );
-        const discount = parseInt(
-          document.getElementById("menu-discount").value || 0,
-        );
-        const image = document.getElementById("menu-image").value.trim();
-
-        if (!name || isNaN(basePrice)) {
-          alert("Enter Item Name and Base Price.");
-          return;
-        }
-
-        const payload = {
-          building_id: targetBuilding,
-          category_type: category,
-          item_name: name,
-          portion_badge: badge,
-          base_price: basePrice,
-          discount_pct: discount,
-          image_url: image,
-        };
-
-        const res = editId
-          ? await supabaseClient
-              .from("menu_items")
-              .update(payload)
-              .eq("id", editId)
-          : await supabaseClient.from("menu_items").insert([payload]);
-
-        if (res.error) {
-          alert("Error: " + res.error.message);
-          return;
-        }
-
-        resetMenuForm();
-        await fetchMenuItems();
-      }
-
-      async function deleteMenuItem(itemId, itemName) {
-        if (!confirm(`Delete "${itemName}" from catalog?`)) return;
-        await supabaseClient.from("menu_items").delete().eq("id", itemId);
-        await fetchMenuItems();
-      }
-
-      function renderBuildingsList() {
-        const tbody = document.getElementById("buildings-list-body");
-        tbody.innerHTML = "";
-
-        if (activeBuildings.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-slate-500">No campuses registered.</td></tr>`;
-          return;
-        }
-
-        activeBuildings.forEach((b) => {
-          const safeName = b.campus_name.replace(/'/g, "\\'");
-          tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition border-b border-slate-200 dark:border-slate-800/40">
-                        <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">${b.campus_name}</td>
-                        <td class="py-3 px-4 text-amber-600 dark:text-amber-300 font-mono">${b.qr_code_slug}</td>
-                        <td class="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
-                            <button onclick="printStandee('${safeName}', '${b.qr_code_slug}', '${b.cutoff_slot || ""}', '${b.delivery_slot || ""}')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white px-2 py-1 rounded-lg text-[10px] font-bold">Print QR</button>
-                            <button onclick="startEditBuilding('${b.id}')" class="bg-blue-100 hover:bg-blue-200 dark:bg-blue-950/80 dark:hover:bg-blue-900 border border-blue-300 dark:border-blue-700/60 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-lg text-[10px] font-bold">Edit</button>
-                            <button onclick="deleteBuilding('${b.id}', '${safeName}')" class="bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/80 dark:hover:bg-rose-900 border border-rose-300 dark:border-rose-700/60 text-rose-700 dark:text-rose-300 px-2 py-1 rounded-lg text-[10px] font-bold">Delete</button>
-                        </td>
-                    </tr>
-                `;
-        });
-      }
-
-      function startEditBuilding(buildingId) {
-        const b = activeBuildings.find((item) => item.id === buildingId);
-        if (!b) return;
-
-        document.getElementById("edit-building-id").value = b.id;
-        document.getElementById("new-campus-name").value = b.campus_name;
-        document.getElementById("new-qr-slug").value = b.qr_code_slug;
-        document.getElementById("new-cutoff").value =
-          b.cutoff_slot || "12:00 PM - 12:30 PM";
-        document.getElementById("new-delivery").value =
-          b.delivery_slot || "03:30 PM - 04:00 PM";
-
-        document.getElementById("building-form-title").innerText =
-          `✏️ Edit: ${b.campus_name}`;
-        document.getElementById("save-building-btn").innerText =
-          "Update Campus Details";
-        document.getElementById("cancel-edit-btn").classList.remove("hidden");
-      }
-
-      function resetBuildingForm() {
-        document.getElementById("edit-building-id").value = "";
-        document.getElementById("new-campus-name").value = "";
-        document.getElementById("new-qr-slug").value = "";
-        document.getElementById("building-form-title").innerText =
-          "+ Register Location";
-        document.getElementById("save-building-btn").innerText =
-          "Save Campus & Generate QR";
-        document.getElementById("cancel-edit-btn").classList.add("hidden");
-      }
-
-      async function saveBuildingHandler() {
-        const editId = document.getElementById("edit-building-id").value;
-        const name = document.getElementById("new-campus-name").value.trim();
-        const slug = document
-          .getElementById("new-qr-slug")
-          .value.trim()
-          .toLowerCase()
-          .replace(/\s+/g, "-");
-        const cutoff = document.getElementById("new-cutoff").value.trim();
-        const delivery = document.getElementById("new-delivery").value.trim();
-
-        if (!name || !slug) {
-          alert("Enter Campus Name and QR Slug.");
-          return;
-        }
-
-        const payload = {
-          campus_name: name,
-          qr_code_slug: slug,
-          cutoff_slot: cutoff,
-          delivery_slot: delivery,
-        };
-        const res = editId
-          ? await supabaseClient
-              .from("buildings")
-              .update(payload)
-              .eq("id", editId)
-          : await supabaseClient.from("buildings").insert([payload]);
-
-        if (res.error) {
-          alert("Error: " + res.error.message);
-          return;
-        }
-
-        resetBuildingForm();
-        await fetchDashboardData();
-      }
-
-      async function deleteBuilding(buildingId, campusName) {
-        if (!confirm(`Delete "${campusName}"?`)) return;
-        await supabaseClient.from("buildings").delete().eq("id", buildingId);
-        await fetchDashboardData();
-      }
-
-      function printStandee(name, slug, cutoff, delivery) {
-        const container = document.getElementById("printable-section");
-        container.innerHTML = `
-                <div class="flex flex-col items-center justify-center min-h-screen text-center p-8">
-                    <div class="w-[360px] border-4 border-emerald-700 rounded-3xl p-6 space-y-4 shadow-xl">
-                        <div class="bg-emerald-700 text-white py-1.5 px-4 rounded-full font-black text-sm tracking-wider uppercase inline-block">TASTEA FOOD PASS</div>
-                        <h2 class="text-xl font-black text-slate-900">${name}</h2>
-                        <div id="standee-qr-target" class="flex justify-center p-2 bg-slate-50 rounded-2xl border-2 border-dashed border-emerald-600"></div>
-                        <p class="text-xs font-black text-slate-800">📸 SCAN TO ORDER TODAY'S FRESH SNACKS</p>
-                        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 text-xs text-emerald-950 font-semibold space-y-0.5">
-                            <p>⏱️ Cut-Off: ${cutoff}</p>
-                            <p>🚚 Delivery: ${delivery}</p>
-                        </div>
-                        <p class="text-[10px] text-slate-400 uppercase font-bold">Insulated Desk & Staff Room Delivery</p>
-                    </div>
-                </div>
-            `;
-
-        const origin =
-          window.location.origin +
-          window.location.pathname.replace("admin.html", "index.html");
-        const qr = new QRCodeStyling({
-          width: 200,
-          height: 200,
-          data: `${origin}?b=${slug}`,
-          dotsOptions: { color: "#047857", type: "rounded" },
-          cornersSquareOptions: { color: "#065f46", type: "extra-rounded" },
-        });
-
-        qr.append(document.getElementById("standee-qr-target"));
-        setTimeout(() => {
-          window.print();
-        }, 500);
-      }
-
-      function printManifest() {
-        const container = document.getElementById("printable-section");
-        container.innerHTML = `
-                <div class="text-center border-b pb-3 mb-4">
-                    <h1 class="text-2xl font-black tracking-wider">TASTEA FOOD PASS</h1>
-                    <p class="text-xs text-gray-600">Daily Kitchen Packing & Drop Manifest</p>
-                </div>
-            `;
-
-        Object.values(dispatchGrouping).forEach((group) => {
-          let customerListHTML = group.customers
-            .map(
-              (c, i) => `
-                    <tr class="border-b text-xs">
-                        <td class="py-1 font-bold">${i + 1}. ${c.name}</td>
-                        <td class="py-1">${c.item}</td>
-                        <td class="py-1 text-center font-bold">${c.qty}</td>
-                        <td class="py-1 text-right font-bold ${c.paid ? "text-green-700" : "text-red-600"}">${c.paid ? "PAID" : "DUE: ₹" + c.price}</td>
-                    </tr>
-                `,
-            )
-            .join("");
-
-          container.innerHTML += `
-                    <div class="border-2 border-dashed border-black p-4 rounded-xl space-y-3 break-inside-avoid mb-6">
-                        <div class="flex justify-between items-center border-b pb-2">
-                            <div>
-                                <h3 class="text-lg font-black uppercase">📦 BAG DROP: ${group.locKey}</h3>
-                                <p class="text-xs text-gray-600">Insulated Pack</p>
-                            </div>
-                            <div class="text-right">
-                                <span class="text-xs font-bold bg-gray-200 px-2 py-1 rounded">Total: ${group.total} Boxes</span>
-                                <p class="text-[10px] text-gray-500 mt-1">Veg: ${group.veg} | Non-Veg: ${group.nonveg}</p>
-                            </div>
-                        </div>
-                        <table class="w-full text-left">
-                            <thead>
-                                <tr class="text-[10px] uppercase border-b font-bold text-gray-500">
-                                    <th class="py-1">Staff Name</th>
-                                    <th class="py-1">Item</th>
-                                    <th class="py-1 text-center">Qty</th>
-                                    <th class="py-1 text-right">Payment</th>
-                                </tr>
-                            </thead>
-                            <tbody>${customerListHTML}</tbody>
-                        </table>
-                    </div>
-                `;
-        });
-
-        window.print();
-      }
-
-      function updateCampaignTemplate() {
-        const selected = document.getElementById(
-          "campaign-template-select",
-        ).value;
-        document.getElementById("campaign-message-text").value =
-          campaignTemplates[selected];
-      }
-      async function fetchAdminOrders() {
-        const { data: orders, error } = await supabase
-          .from("orders")
-          .select("*")
-          .order("created_at", { ascending: false });
-
-        if (error) {
-          console.error("Error fetching orders:", error);
-          return;
-        }
-        console.log("Orders loaded:", orders);
-      }
-      async function fetchCustomersList() {
-        const { data: customers } = await supabaseClient
-          .from("customers")
-          .select("*")
-          .order("last_ordered_at", { ascending: false });
-        allCustomers = customers || [];
-        document.getElementById("customer-total-count").innerText =
-          `${allCustomers.length} Profiles`;
-
-        const tbody = document.getElementById("campaign-customer-table");
-        tbody.innerHTML = "";
-
-        if (allCustomers.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">No customers registered yet.</td></tr>`;
-          return;
-        }
-
-        allCustomers.forEach((c) => {
-          const dropPoint = `${c.saved_block || "Main"} • ${c.saved_floor || "General"}`;
-          const msg = encodeURIComponent(
-            document.getElementById("campaign-message-text").value,
-          );
-          const limit = c.credit_limit || 500;
-
-          tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition border-b border-slate-200 dark:border-slate-800/40">
-                        <td class="py-3 px-4">
-                            <span class="font-bold text-slate-900 dark:text-white">${c.full_name}</span><br>
-                            <span class="text-slate-500 dark:text-slate-400 font-mono text-[11px]">${c.phone}</span>
-                        </td>
-                        <td class="py-3 px-4 text-amber-600 dark:text-amber-300 font-semibold">${dropPoint}</td>
-                        <td class="py-3 px-4 text-center font-bold text-slate-700 dark:text-slate-200">${c.total_orders_count || 1}</td>
-                        <td class="py-3 px-4 text-center">
-                            <input type="number" value="${limit}" onchange="updateCustomerLimit('${c.id}', this.value)" class="w-20 bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-center font-bold text-xs text-slate-900 dark:text-white focus:outline-emerald-500" title="Edit Employee Credit Limit">
-                        </td>
-                        <td class="py-3 px-4 text-right font-black text-emerald-600 dark:text-emerald-400">₹${c.total_spend_amount || 0}</td>
-                        <td class="py-3 px-4 text-right">
-                            <a href="https://wa.me/91${c.phone}?text=${msg}" target="_blank" class="bg-green-600 hover:bg-green-500 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold inline-flex items-center gap-1">
-                                <i class="fa-brands fa-whatsapp"></i> Chat
-                            </a>
-                        </td>
-                    </tr>
-                `;
-        });
-      }
-
-      async function updateCustomerLimit(customerId, newLimit) {
-        const { error } = await supabaseClient
-          .from("customers")
-          .update({ credit_limit: parseFloat(newLimit) })
-          .eq("id", customerId);
-
-        if (error) alert("Failed to update credit limit: " + error.message);
-        else alert("✅ Employee credit limit updated to ₹" + newLimit);
-      }
-
-      function copyBroadcastNumbers() {
-        if (allCustomers.length === 0) {
-          alert("No numbers available.");
-          return;
-        }
-        const numbers = allCustomers.map((c) => `+91${c.phone}`).join("\n");
-        navigator.clipboard.writeText(numbers);
-        alert(`✅ Copied ${allCustomers.length} numbers to clipboard!`);
-      }
-
-      function shareWhatsAppManifest() {
-        let msg = `*📦 TASTEA DAILY DISPATCH MANIFEST*\n\n`;
-        Object.values(dispatchGrouping).forEach((group) => {
-          msg += `📍 *${group.locKey}* (Total: ${group.total} Boxes)\n`;
-          msg += `• Veg: ${group.veg} | Non-Veg: ${group.nonveg}\n`;
-          group.customers.forEach((c) => {
-            msg += `  - ${c.name}: ${c.qty}x ${c.item} [${c.paid ? "PAID" : "DUE ₹" + c.price}]\n`;
-          });
-          msg += `\n`;
-        });
-        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
-      }
+            function shareWhatsAppManifest() {
+              let msg = `*📦 TASTEA DAILY DISPATCH MANIFEST*\n\n`;
+              Object.values(dispatchGrouping).forEach((group) => {
+                msg += `📍 *${group.locKey}* (Total: ${group.total} Boxes)\n`;
+                msg += `• Veg: ${group.veg} | Non-Veg: ${group.nonveg}\n`;
+                group.customers.forEach((c) => {
+                  msg += `  - ${c.name}: ${c.qty}x ${c.item} [${c.paid ? "PAID" : "DUE ₹" + c.price}]\n`;
+                });
+                msg += `\n`;
+              });
+              window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+            }
     </script>
   </body>
 </html>

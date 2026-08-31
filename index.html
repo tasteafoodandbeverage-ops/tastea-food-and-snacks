@@ -1451,6 +1451,10 @@
     </div>
 
     <script>
+      window.addEventListener("DOMContentLoaded", () => {
+        fetchcustomerlist();
+        fetchAdminOrders(); // Add this line here
+      });
       document.addEventListener("DOMContentLoaded", function () {
         const savedUser = localStorage.getItem("tastea_user");
         if (savedUser) {
