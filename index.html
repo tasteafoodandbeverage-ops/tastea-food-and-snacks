@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tastea Food Pass — Fresh Desk Dispatch</title>
@@ -945,6 +946,13 @@
 
     <!-- Application Script Engine -->
     <script>
+      const SUPABASE_URL = "https://droxpyfhnkswaabsabk.supabase.co";
+      const SUPABASE_ANON_KEY =
+        "sb_publishable_UaxcoKKhZNGpoN9ZRKNIuw_u0PJbfxm"; // Paste your full key from Supabase here
+      const supabase = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY,
+      );
       const SUPABASE_URL = "https://droxpyfhknkswaabsabk.supabase.co";
       const SUPABASE_ANON_KEY =
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyb3hweWZoa25rc3dhYWJzYWJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwNjgzNDIsImV4cCI6MjEwMzY0NDM0Mn0.bSawsQ0t6Cls4QjpTxhk6Mp80GFlFUg1lTqLk87fxuM"; // Paste your public anon key here

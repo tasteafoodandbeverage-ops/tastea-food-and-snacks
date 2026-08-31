@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en" class="dark">
   <head>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tastea Enterprise Control Hub</title>
@@ -861,6 +862,13 @@
 
     <!-- Application Script Engine -->
     <script>
+      const SUPABASE_URL = "https://droxpyfhnkswaabsabk.supabase.co";
+      const SUPABASE_ANON_KEY =
+        "sb_publishable_UaxcoKKhZNGpoN9ZRKNIuw_u0PJbfxm"; // Paste your full key from Supabase here
+      const supabase = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY,
+      );
       const SUPABASE_URL = "https://droxpyfhknkswaabsabk.supabase.co";
       const SUPABASE_ANON_KEY =
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyb3hweWZoa25rc3dhYWJzYWJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwNjgzNDIsImV4cCI6MjEwMzY0NDM0Mn0.bSawsQ0t6Cls4QjpTxhk6Mp80GFlFUg1lTqLk87fxuM"; // Paste your public anon key here
@@ -1490,7 +1498,18 @@
         document.getElementById("campaign-message-text").value =
           campaignTemplates[selected];
       }
+      async function fetchAdminOrders() {
+        const { data: orders, error } = await supabase
+          .from("orders")
+          .select("*")
+          .order("created_at", { ascending: false });
 
+        if (error) {
+          console.error("Error fetching orders:", error);
+          return;
+        }
+        console.log("Orders loaded:", orders);
+      }
       async function fetchCustomersList() {
         const { data: customers } = await supabaseClient
           .from("customers")
