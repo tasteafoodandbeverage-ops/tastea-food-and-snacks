@@ -1427,6 +1427,19 @@
                       .scrollBy({ left: distance, behavior: "smooth" });
                   }
                   <!-- Login Modal Structure -->
+                  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const savedUser = localStorage.getItem("tastea_user");
+        if (savedUser) {
+            window.currentUser = JSON.parse(savedUser);
+        } else {
+            const loginModal = document.getElementById("login-modal");
+            if (loginModal) {
+                loginModal.classList.remove("hidden");
+            }
+        }
+    });
+</script>
             <div id="login-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
                 <div class="bg-white rounded-2xl p-6 w-11/12 max-w-md shadow-xl">
                     <h2 class="text-xl font-bold mb-4 text-slate-800">Welcome to Tastea</h2>
